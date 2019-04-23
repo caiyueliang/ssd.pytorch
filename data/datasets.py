@@ -72,6 +72,7 @@ class ListDataset(Dataset):
     def __init__(self, root_path, image_file, train=False, img_size=416):
         self.root_path = root_path
         self.image_file = image_file
+        print('ListDataset', os.path.join(self.root_path, self.image_file))
         with open(os.path.join(self.root_path, self.image_file), 'r') as file:
             self.img_files = file.readlines()
         self.img_files = [os.path.join(self.root_path, files.replace('\n', '')) for files in self.img_files]
@@ -79,6 +80,7 @@ class ListDataset(Dataset):
         self.label_files = [path.replace('.bmp', '.txt').replace('.png', '.txt').replace('.jpg', '.txt').replace('.jpeg', '.txt') for path in self.img_files]
         print('img_files len: %d' % len(self.img_files))
         print('label_files len: %d' % len(self.label_files))
+        self.name = "things"
 
         self.img_shape = img_size
         self.train = train
@@ -141,6 +143,12 @@ class ListDataset(Dataset):
         labels = None
         if os.path.exists(label_path):
             labels = np.loadtxt(label_path).reshape(-1, 5)
+            # print('labels', labels, type(labels))
+            labels_1 = labels[:, 1:]
+            labels_2 = labels[:, :1]
+            # new_labels = [labels_1, labels_2]
+            new_labels = np.concatenate((labels_1, labels_2), axis=1)
+            # print('new_labels', new_labels)
 
         # ==============================================================================================
         #  Image
@@ -192,17 +200,17 @@ class ListDataset(Dataset):
 
         input_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))         # opencv 转 PIL
         input_img = transforms.ToTensor()(input_img)
-        input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
+        # input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
 
-        # ==============================================================================================
-        # Fill matrix
-        # filled_labels size (50, 5);每一行表示一个标签（最多50个），分别表示：类别，x轴中心点，y轴中心点，w，h
+        # # ==============================================================================================
+        # # Fill matrix
+        # # filled_labels size (50, 5);每一行表示一个标签（最多50个），分别表示：类别，x轴中心点，y轴中心点，w，h
         filled_labels = np.zeros((self.max_objects, 5))
-        if labels is not None:
-            filled_labels[range(len(labels))[:self.max_objects]] = labels[:self.max_objects]
+        if new_labels is not None:
+            filled_labels[range(len(new_labels))[:self.max_objects]] = new_labels[:self.max_objects]
         filled_labels = torch.from_numpy(filled_labels)
 
-        return img_path, input_img, filled_labels
+        return input_img, filled_labels
 
     def __len__(self):
         return len(self.img_files)

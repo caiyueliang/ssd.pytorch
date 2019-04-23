@@ -29,11 +29,11 @@ parser = argparse.ArgumentParser(
 train_set = parser.add_mutually_exclusive_group()
 parser.add_argument('--dataset', default='things', choices=['VOC', 'COCO', 'things'],
                     type=str, help='VOC or COCO or things')
-parser.add_argument('--dataset_root', default=VOC_ROOT,
+parser.add_argument('--dataset_root', default=THINGS_ROOT,
                     help='Dataset root directory path')
 parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
                     help='Pretrained base model')
-parser.add_argument('--batch_size', default=32, type=int,
+parser.add_argument('--batch_size', default=8, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from')
@@ -90,10 +90,10 @@ def train():
         dataset = VOCDetection(root=args.dataset_root,
                                transform=SSDAugmentation(cfg['min_dim'], MEANS))
     elif args.dataset == 'things':
-        if args.dataset_root == THINGS_ROOT:
+        if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
-        dataset = ListDataset(args.dataset_root, 'image_path.txt', train=True)
+        dataset = ListDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
 
     if args.visdom:
         import visdom
@@ -149,10 +149,17 @@ def train():
         iter_plot = create_vis_plot('Iteration', 'Loss', vis_title, vis_legend)
         epoch_plot = create_vis_plot('Epoch', 'Loss', vis_title, vis_legend)
 
+    # TODO
+    # data_loader = data.DataLoader(dataset, args.batch_size,
+    #                               num_workers=args.num_workers,
+    #                               shuffle=True, collate_fn=detection_collate,
+    #                               pin_memory=True)
     data_loader = data.DataLoader(dataset, args.batch_size,
                                   num_workers=args.num_workers,
-                                  shuffle=True, collate_fn=detection_collate,
-                                  pin_memory=True)
+                                  shuffle=True)
+    # DataLoader(ListDataset(self.train_path, self.image_file, train=True), shuffle=True,
+    #            batch_size=self.opt.batch_size, num_workers=self.opt.n_cpu)
+
     # create batch iterator
     batch_iterator = iter(data_loader)
     for iteration in range(args.start_iter, cfg['max_iter']):
@@ -180,6 +187,8 @@ def train():
         # forward
         t0 = time.time()
         out = net(images)
+        print('out', out)
+
         # backprop
         optimizer.zero_grad()
         loss_l, loss_c = criterion(out, targets)
