@@ -14,6 +14,10 @@ import torch.nn.init as init
 import torch.utils.data as data
 import numpy as np
 import argparse
+from data.datasets import ListDataset
+
+
+THINGS_ROOT = os.path.join(HOME, 'deeplearning/Data/AI比赛/特定物品识别/images_train/')
 
 
 def str2bool(v):
@@ -23,8 +27,8 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
 train_set = parser.add_mutually_exclusive_group()
-parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO'],
-                    type=str, help='VOC or COCO')
+parser.add_argument('--dataset', default='things', choices=['VOC', 'COCO', 'things'],
+                    type=str, help='VOC or COCO or things')
 parser.add_argument('--dataset_root', default=VOC_ROOT,
                     help='Dataset root directory path')
 parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
@@ -78,15 +82,18 @@ def train():
             args.dataset_root = COCO_ROOT
         cfg = coco
         dataset = COCODetection(root=args.dataset_root,
-                                transform=SSDAugmentation(cfg['min_dim'],
-                                                          MEANS))
+                                transform=SSDAugmentation(cfg['min_dim'], MEANS))
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = VOCDetection(root=args.dataset_root,
-                               transform=SSDAugmentation(cfg['min_dim'],
-                                                         MEANS))
+                               transform=SSDAugmentation(cfg['min_dim'], MEANS))
+    elif args.dataset == 'things':
+        if args.dataset_root == THINGS_ROOT:
+            parser.error('Must specify dataset if specifying dataset_root')
+        cfg = voc
+        dataset = ListDataset(args.dataset_root, 'image_path.txt', train=True)
 
     if args.visdom:
         import visdom
