@@ -171,61 +171,41 @@ class ListDataset(Dataset):
         img_path = self.img_files[index % len(self.img_files)].rstrip()
         img = cv2.imread(img_path)
 
-        h, w, c = img.shape
-        show_img = img.copy()
-        for label in new_labels:
-            cv2.rectangle(show_img, (int(label[0] * w), int(label[1] * h)),
-                          (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
-        cv2.imshow('old_image', show_img)
+        # h, w, c = img.shape
+        # show_img = img.copy()
+        # for label in new_labels:
+        #     cv2.rectangle(show_img, (int(label[0] * w), int(label[1] * h)),
+        #                   (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
+        # cv2.imshow('old_image', show_img)
 
         # 图片增广
-        if self.transform is not None:
-            target = np.array(new_labels)
-            img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+        if self.train:
+            img, labels = self.random_flip(img, labels)  # 随机翻转
+            img, labels = self.random_crop(img, labels)  # 随机裁剪
+            img = self.random_bright(img)  # 随机调亮
+            img = self.random_gaussian(img)  # 随机高斯模糊
 
-            # to rgb
-            img = img[:, :, (2, 1, 0)]
-            # img = img.transpose(2, 0, 1)
-            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+            # new_img, new_labels = self.random_crop(img, labels)       # 随机裁剪
+            # if len(new_labels) != len(labels):
+            #     h, w, c = img.shape
+            #     show_img = img.copy()
+            #     for label in labels:
+            #         cv2.rectangle(show_img, (int((label[1] - label[3] / 2) * w), int((label[2] - label[4] / 2) * h)),
+            #                       (int((label[1] + label[3] / 2) * w), int((label[2] + label[4] / 2) * h)), (0, 255, 0))
+            #     cv2.imshow('old_image', show_img)
+            #
+            #     show_img = new_img.copy()
+            #     show_h, show_w, _ = show_img.shape
+            #     for label in new_labels:
+            #         cv2.rectangle(show_img, (int((label[1] - label[3]/2) * show_w), int((label[2] - label[4]/2) * show_h)),
+            #                       (int((label[1] + label[3]/2) * show_w), int((label[2] + label[4]/2) * show_h)), (0, 255, 0))
+            #     cv2.imshow('new_image', show_img)
+            #     cv2.waitKey(0)
+            #
+            # labels = new_labels
 
-            print('target_2', target)
-            h, w, c = img.shape
-            show_img = img.copy()
-            for label in target:
-                cv2.rectangle(show_img, (int(label[0] * w), int(label[1] * h)),
-                              (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
-            cv2.imshow('new_image', show_img)
-            cv2.waitKey()
-
-            return torch.from_numpy(img).permute(2, 0, 1), target
-        else:
-            if self.train:
-                img, labels = self.random_flip(img, labels)             # 随机翻转
-                img, labels = self.random_crop(img, labels)             # 随机裁剪
-                img = self.random_bright(img)                           # 随机调亮
-                img = self.random_gaussian(img)                         # 随机高斯模糊
-
-                # new_img, new_labels = self.random_crop(img, labels)       # 随机裁剪
-                # if len(new_labels) != len(labels):
-                #     h, w, c = img.shape
-                #     show_img = img.copy()
-                #     for label in labels:
-                #         cv2.rectangle(show_img, (int((label[1] - label[3] / 2) * w), int((label[2] - label[4] / 2) * h)),
-                #                       (int((label[1] + label[3] / 2) * w), int((label[2] + label[4] / 2) * h)), (0, 255, 0))
-                #     cv2.imshow('old_image', show_img)
-                #
-                #     show_img = new_img.copy()
-                #     show_h, show_w, _ = show_img.shape
-                #     for label in new_labels:
-                #         cv2.rectangle(show_img, (int((label[1] - label[3]/2) * show_w), int((label[2] - label[4]/2) * show_h)),
-                #                       (int((label[1] + label[3]/2) * show_w), int((label[2] + label[4]/2) * show_h)), (0, 255, 0))
-                #     cv2.imshow('new_image', show_img)
-                #     cv2.waitKey(0)
-                #
-                # labels = new_labels
-
-            img, labels = self.padding(img, labels)                     # padding
-            img = cv2.resize(img, (self.img_shape, self.img_shape))     # resize
+            img, labels = self.padding(img, labels)  # padding
+            img = cv2.resize(img, (self.img_shape, self.img_shape))  # resize
 
             # show_img = img.copy()
             # for label in labels:
@@ -234,21 +214,32 @@ class ListDataset(Dataset):
             # cv2.imshow('new_image', show_img)
             # cv2.waitKey(0)
 
-            input_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))         # opencv 转 PIL
+            input_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))  # opencv 转 PIL
             input_img = transforms.ToTensor()(input_img)
             # input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
 
-            # # ==============================================================================================
-            # # Fill matrix
-            # # filled_labels size (50, 5);每一行表示一个标签（最多50个），分别表示：类别，x轴中心点，y轴中心点，w，h
-            # filled_labels = np.zeros((self.max_objects, 5))
-            # if new_labels is not None:
-            #     filled_labels[range(len(new_labels))[:self.max_objects]] = new_labels[:self.max_objects]
-            # filled_labels = torch.from_numpy(filled_labels)
-
-            # print('input_img', input_img.size())
-            # print(type(new_labels), new_labels)
             return input_img, new_labels
+        elif self.transform is not None:
+            target = np.array(new_labels)
+            img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+
+            # to rgb
+            img = img[:, :, (2, 1, 0)]
+            # img = img.transpose(2, 0, 1)
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+
+            # print('target_2', target)
+            # h, w, c = img.shape
+            # show_img = img.copy()
+            # for label in target:
+            #     cv2.rectangle(show_img, (int(label[0] * w), int(label[1] * h)),
+            #                   (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
+            # cv2.imshow('new_image', show_img)
+            # cv2.waitKey()
+
+            return torch.from_numpy(img).permute(2, 0, 1), target
+        else:
+            return torch.from_numpy(img).permute(2, 0, 1), target
 
     def __len__(self):
         return len(self.img_files)
