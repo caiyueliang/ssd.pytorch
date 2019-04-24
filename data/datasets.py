@@ -197,7 +197,9 @@ class SSDDataset(Dataset):
             # cv2.imshow('new_image', show_img)
             # cv2.waitKey()
 
-            return torch.from_numpy(img).permute(2, 0, 1), target
+            # TODO
+            # return torch.from_numpy(img).permute(2, 0, 1), target
+            return transforms.ToTensor()(img), target
         else:
             # 图片增广
             if self.train:

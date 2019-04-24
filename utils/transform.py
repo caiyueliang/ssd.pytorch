@@ -414,6 +414,7 @@ class TransformTrain(object):
             SubtractMeans(self.mean)    # 减去均值
         ])
 
+    # boxes: [xmin, ymin, xmax, ymax]
     def __call__(self, img, boxes, labels):
         return self.augment(img, boxes, labels)
 
@@ -434,5 +435,6 @@ class TransformTest(object):
             SubtractMeans(self.mean)    # 减去均值
         ])
 
+    # boxes: [xmin, ymin, xmax, ymax]
     def __call__(self, img, boxes, labels):
         return self.augment(img, boxes, labels)
