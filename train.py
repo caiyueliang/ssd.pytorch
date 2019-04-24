@@ -27,9 +27,9 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
 train_set = parser.add_mutually_exclusive_group()
-parser.add_argument('--dataset', default='things', choices=['VOC', 'COCO', 'things'],
+parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO', 'things'],
                     type=str, help='VOC or COCO or things')
-parser.add_argument('--dataset_root', default=THINGS_ROOT,
+parser.add_argument('--dataset_root', default=VOC_ROOT,
                     help='Dataset root directory path')
 parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
                     help='Pretrained base model')
@@ -150,15 +150,15 @@ def train():
         epoch_plot = create_vis_plot('Epoch', 'Loss', vis_title, vis_legend)
 
     # TODO
-    # data_loader = data.DataLoader(dataset, args.batch_size,
-    #                               num_workers=args.num_workers,
-    #                               shuffle=True, collate_fn=detection_collate,
-    #                               pin_memory=True)
-    data_loader = data.DataLoader(dataset, args.batch_size,
-                                  num_workers=args.num_workers,
-                                  shuffle=True)
-    # DataLoader(ListDataset(self.train_path, self.image_file, train=True), shuffle=True,
-    #            batch_size=self.opt.batch_size, num_workers=self.opt.n_cpu)
+    if args.dataset == 'things':
+        data_loader = data.DataLoader(dataset, args.batch_size,
+                                      num_workers=args.num_workers,
+                                      shuffle=True)
+    else:
+        data_loader = data.DataLoader(dataset, args.batch_size,
+                                      num_workers=args.num_workers,
+                                      shuffle=True, collate_fn=detection_collate,
+                                      pin_memory=True)
 
     # create batch iterator
     batch_iterator = iter(data_loader)
@@ -177,6 +177,7 @@ def train():
 
         # load train data
         images, targets = next(batch_iterator)
+        # print('targets', targets)
 
         if args.cuda:
             images = Variable(images.cuda())
@@ -187,7 +188,7 @@ def train():
         # forward
         t0 = time.time()
         out = net(images)
-        print('out', out)
+        # print('out', out)
 
         # backprop
         optimizer.zero_grad()
@@ -196,16 +197,15 @@ def train():
         loss.backward()
         optimizer.step()
         t1 = time.time()
-        loc_loss += loss_l.data[0]
-        conf_loss += loss_c.data[0]
+        loc_loss += loss_l.item()
+        conf_loss += loss_c.item()
 
         if iteration % 10 == 0:
             print('timer: %.4f sec.' % (t1 - t0))
-            print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data[0]), end=' ')
+            print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.item()), end=' ')
 
         if args.visdom:
-            update_vis_plot(iteration, loss_l.data[0], loss_c.data[0],
-                            iter_plot, epoch_plot, 'append')
+            update_vis_plot(iteration, loss_l.item(), loss_c.item(), iter_plot, epoch_plot, 'append')
 
         if iteration != 0 and iteration % 5000 == 0:
             print('Saving state, iter:', iteration)
