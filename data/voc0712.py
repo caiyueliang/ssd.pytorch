@@ -113,7 +113,6 @@ class VOCDetection(data.Dataset):
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
-
         return im, gt
 
     def __len__(self):
@@ -123,6 +122,8 @@ class VOCDetection(data.Dataset):
         img_id = self.ids[index]
 
         target = ET.parse(self._annopath % img_id).getroot()
+        # print('path', self._imgpath % img_id)
+
         img = cv2.imread(self._imgpath % img_id)
         height, width, channels = img.shape
 
@@ -132,10 +133,17 @@ class VOCDetection(data.Dataset):
         if self.transform is not None:
             target = np.array(target)
             img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+
+            # show_img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+            # cv2.imshow("OpenCV", show_img)
+
             # to rgb
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(2, 0, 1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+
+            # print("target", target)
+            # cv2.waitKey()
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width
         # return torch.from_numpy(img), target, height, width
 

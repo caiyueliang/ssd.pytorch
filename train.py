@@ -177,7 +177,6 @@ def train():
 
         # load train data
         images, targets = next(batch_iterator)
-        # print('targets', targets)
 
         if args.cuda:
             images = Variable(images.cuda())
