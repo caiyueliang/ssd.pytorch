@@ -132,21 +132,20 @@ class VOCDetection(data.Dataset):
 
         if self.target_transform is not None:
             target = self.target_transform(target, width, height)
+        print('target_1', target)
+        cv2.imshow("target_1", img)
 
         if self.transform is not None:
             target = np.array(target)
             img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
 
-            # show_img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
-            # cv2.imshow("OpenCV", show_img)
-
             # to rgb
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(2, 0, 1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-
-            # print("target", target)
-            # cv2.waitKey()
+        print('target_2', target)
+        cv2.imshow("target_2", img)
+        cv2.waitKey()
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width
         # return torch.from_numpy(img), target, height, width
 

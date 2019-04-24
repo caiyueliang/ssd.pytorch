@@ -84,7 +84,11 @@ def train():
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
-        dataset = ListDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
+        dataset = ListDataset(root_path=os.path.join(args.dataset_root, 'train'),
+                              image_file='image_path.txt',
+                              img_size=300,
+                              train=True,
+                              transform=SSDAugmentation(300, MEANS))
         test_dataset = ListDataset(os.path.join(args.dataset_root, 'test'), 'image_path.txt', train=False)
         # cfg['num_classes'] = args.class_num
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
