@@ -89,7 +89,11 @@ def train():
                               img_size=300,
                               train=True,
                               transform=SSDAugmentation(300, MEANS))
-        test_dataset = ListDataset(os.path.join(args.dataset_root, 'test'), 'image_path.txt', train=False)
+        test_dataset = ListDataset(root_path=os.path.join(args.dataset_root, 'test'),
+                                   image_file='image_path.txt',
+                                   img_size=300,
+                                   train=False,
+                                   transform=None)
         # cfg['num_classes'] = args.class_num
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
         print('cfg', cfg)
