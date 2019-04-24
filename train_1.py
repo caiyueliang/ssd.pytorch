@@ -158,59 +158,63 @@ def train():
                                       pin_memory=True)
 
     # create batch iterator
-    batch_iterator = iter(data_loader)
-    for iteration in range(args.start_iter, cfg['max_iter']):
-        if args.visdom and iteration != 0 and (iteration % epoch_size == 0):
-            update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
-                            'append', epoch_size)
-            # reset epoch loss counters
-            loc_loss = 0
-            conf_loss = 0
-            epoch += 1
+    # batch_iterator = iter(data_loader)
+    for epoch in range(200):
+        print(epoch)
+        train_loss = 0.0
 
-        if iteration in cfg['lr_steps']:
-            step_index += 1
-            adjust_learning_rate(optimizer, args.gamma, step_index)
+        for batch_i, (images, targets) in enumerate(data_loader):
+            # for iteration in range(args.start_iter, cfg['max_iter']):
+            #     if args.visdom and batch_i != 0 and (batch_i % epoch_size == 0):
+            #         update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
+            #                         'append', epoch_size)
+            #         # reset epoch loss counters
+            #         loc_loss = 0
+            #         conf_loss = 0
+            #         epoch += 1
 
-        # load train data
-        images, targets = next(batch_iterator)
-        # print(images.size())
-        # print('targets', targets)
+            if batch_i in cfg['lr_steps']:
+                step_index += 1
+                adjust_learning_rate(optimizer, args.gamma, step_index)
 
-        if args.cuda:
-            images = Variable(images.cuda())
-            targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
-        else:
-            images = Variable(images)
-            targets = [Variable(ann, volatile=True) for ann in targets]
-        # forward
-        t0 = time.time()
-        out = net(images)
-        # print('out', out)
+            # load train data
+            # images, targets = next(batch_iterator)
+            # print(images.size())
+            # print('targets', targets)
 
-        # backprop
-        optimizer.zero_grad()
-        loss_l, loss_c = criterion(out, targets)
-        loss = loss_l + loss_c
-        loss.backward()
-        optimizer.step()
-        t1 = time.time()
-        loc_loss += loss_l.item()
-        conf_loss += loss_c.item()
+            if args.cuda:
+                images = Variable(images.cuda())
+                targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
+            else:
+                images = Variable(images)
+                targets = [Variable(ann, volatile=True) for ann in targets]
+            # forward
+            t0 = time.time()
+            out = net(images)
+            # print('out', out)
 
-        if iteration % 10 == 0:
-            print('timer: %.4f sec.' % (t1 - t0))
-            print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.item()), end=' ')
+            # backprop
+            optimizer.zero_grad()
+            loss_l, loss_c = criterion(out, targets)
+            loss = loss_l + loss_c
+            loss.backward()
+            optimizer.step()
+            t1 = time.time()
+            loc_loss += loss_l.item()
+            conf_loss += loss_c.item()
 
-        if args.visdom:
-            update_vis_plot(iteration, loss_l.item(), loss_c.item(), iter_plot, epoch_plot, 'append')
+            if batch_i % 20 == 0:
+                print('iter ' + repr(batch_i) + ' || Loss: %.4f ||' % (loss.item()), end=' ')
+                print('timer: %.4f sec.' % (t1 - t0))
 
-        if iteration != 0 and iteration % 5000 == 0:
-            print('Saving state, iter:', iteration)
-            torch.save(ssd_net.state_dict(), 'weights/ssd300_COCO_' +
-                       repr(iteration) + '.pth')
-    torch.save(ssd_net.state_dict(),
-               args.save_folder + '' + args.dataset + '.pth')
+            # if args.visdom:
+            #     update_vis_plot(batch_i, loss_l.item(), loss_c.item(), iter_plot, epoch_plot, 'append')
+
+            # if batch_i != 0 and batch_i % 5000 == 0:
+            #     print('Saving state, iter:', batch_i)
+            #     torch.save(ssd_net.state_dict(), 'weights/ssd300_COCO_' + repr(batch_i) + '.pth')
+
+        torch.save(ssd_net.state_dict(), args.save_folder + '' + args.dataset + '.pth')
 
 
 def adjust_learning_rate(optimizer, gamma, step):
