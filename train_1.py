@@ -39,8 +39,8 @@ parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight dec
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
 
-parser.add_argument('--total_epochs', default=100, type=int, help='total_epochs')
-parser.add_argument('--decay_epoch', default=40, type=int, help='decay_epoch')
+parser.add_argument('--total_epochs', default=200, type=int, help='total_epochs')
+parser.add_argument('--decay_epoch', default=60, type=int, help='decay_epoch')
 parser.add_argument('--min_loss', default=5, type=float, help='min_loss')
 parser.add_argument('--class_num', default=15, type=int, help='class_num')
 
@@ -86,14 +86,14 @@ def train():
         cfg = voc
         dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'train'),
                              image_file='image_path.txt',
-                             img_size=300,
+                             img_size=cfg['min_dim'],
                              train=True,
-                             transform=TransformTrain(300, MEANS))
+                             transform=TransformTrain(cfg['min_dim'], MEANS))
         test_dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
                                   image_file='image_path.txt',
-                                  img_size=300,
+                                  img_size=cfg['min_dim'],
                                   train=False,
-                                  transform=TransformTest(300, MEANS))
+                                  transform=TransformTest(cfg['min_dim'], MEANS))
         # cfg['num_classes'] = args.class_num
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
         print('cfg', cfg)
