@@ -179,48 +179,7 @@ class SSDDataset(Dataset):
         #                   (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
         # cv2.imshow('old_image', show_img)
 
-        # 图片增广
-        if self.train:
-            img, labels = self.random_flip(img, labels)  # 随机翻转
-            img, labels = self.random_crop(img, labels)  # 随机裁剪
-            img = self.random_bright(img)  # 随机调亮
-            img = self.random_gaussian(img)  # 随机高斯模糊
-
-            # new_img, new_labels = self.random_crop(img, labels)       # 随机裁剪
-            # if len(new_labels) != len(labels):
-            #     h, w, c = img.shape
-            #     show_img = img.copy()
-            #     for label in labels:
-            #         cv2.rectangle(show_img, (int((label[1] - label[3] / 2) * w), int((label[2] - label[4] / 2) * h)),
-            #                       (int((label[1] + label[3] / 2) * w), int((label[2] + label[4] / 2) * h)), (0, 255, 0))
-            #     cv2.imshow('old_image', show_img)
-            #
-            #     show_img = new_img.copy()
-            #     show_h, show_w, _ = show_img.shape
-            #     for label in new_labels:
-            #         cv2.rectangle(show_img, (int((label[1] - label[3]/2) * show_w), int((label[2] - label[4]/2) * show_h)),
-            #                       (int((label[1] + label[3]/2) * show_w), int((label[2] + label[4]/2) * show_h)), (0, 255, 0))
-            #     cv2.imshow('new_image', show_img)
-            #     cv2.waitKey(0)
-            #
-            # labels = new_labels
-
-            img, labels = self.padding(img, labels)  # padding
-            img = cv2.resize(img, (self.img_shape, self.img_shape))  # resize
-
-            # show_img = img.copy()
-            # for label in labels:
-            #     cv2.rectangle(show_img, (int((label[1] - label[3]/2) * self.img_shape), int((label[2] - label[4]/2) * self.img_shape)),
-            #                   (int((label[1] + label[3]/2) * self.img_shape), int((label[2] + label[4]/2) * self.img_shape)), (0, 255, 0))
-            # cv2.imshow('new_image', show_img)
-            # cv2.waitKey(0)
-
-            input_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))  # opencv 转 PIL
-            input_img = transforms.ToTensor()(input_img)
-            # input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
-
-            return input_img, new_labels
-        elif self.transform is not None:
+        if self.transform is not None:
             target = np.array(new_labels)
             img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
 
@@ -240,7 +199,47 @@ class SSDDataset(Dataset):
 
             return torch.from_numpy(img).permute(2, 0, 1), target
         else:
-            return torch.from_numpy(img).permute(2, 0, 1), new_labels
+            # 图片增广
+            if self.train:
+                img, labels = self.random_flip(img, labels)  # 随机翻转
+                img, labels = self.random_crop(img, labels)  # 随机裁剪
+                img = self.random_bright(img)  # 随机调亮
+                img = self.random_gaussian(img)  # 随机高斯模糊
+
+                # new_img, new_labels = self.random_crop(img, labels)       # 随机裁剪
+                # if len(new_labels) != len(labels):
+                #     h, w, c = img.shape
+                #     show_img = img.copy()
+                #     for label in labels:
+                #         cv2.rectangle(show_img, (int((label[1] - label[3] / 2) * w), int((label[2] - label[4] / 2) * h)),
+                #                       (int((label[1] + label[3] / 2) * w), int((label[2] + label[4] / 2) * h)), (0, 255, 0))
+                #     cv2.imshow('old_image', show_img)
+                #
+                #     show_img = new_img.copy()
+                #     show_h, show_w, _ = show_img.shape
+                #     for label in new_labels:
+                #         cv2.rectangle(show_img, (int((label[1] - label[3]/2) * show_w), int((label[2] - label[4]/2) * show_h)),
+                #                       (int((label[1] + label[3]/2) * show_w), int((label[2] + label[4]/2) * show_h)), (0, 255, 0))
+                #     cv2.imshow('new_image', show_img)
+                #     cv2.waitKey(0)
+                #
+                # labels = new_labels
+
+            img, labels = self.padding(img, labels)  # padding
+            img = cv2.resize(img, (self.img_shape, self.img_shape))  # resize
+
+            # show_img = img.copy()
+            # for label in labels:
+            #     cv2.rectangle(show_img, (int((label[1] - label[3]/2) * self.img_shape), int((label[2] - label[4]/2) * self.img_shape)),
+            #                   (int((label[1] + label[3]/2) * self.img_shape), int((label[2] + label[4]/2) * self.img_shape)), (0, 255, 0))
+            # cv2.imshow('new_image', show_img)
+            # cv2.waitKey(0)
+
+            input_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))  # opencv 转 PIL
+            input_img = transforms.ToTensor()(input_img)
+            # input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
+
+            return input_img, new_labels
 
     def __len__(self):
         return len(self.img_files)

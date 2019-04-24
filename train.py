@@ -1,6 +1,6 @@
 # encoding:utf-8
 from data import *
-from utils.augmentations import SSDAugmentation
+from utils.transform import TransformTrain, TransformTest
 from layers.modules import MultiBoxLoss
 from ssd import build_ssd
 import os
@@ -15,7 +15,7 @@ import torch.nn.init as init
 import torch.utils.data as data
 import numpy as np
 import argparse
-from data.datasets import ListDataset
+from data.datasets import SSDDataset
 
 
 def str2bool(v):
@@ -80,18 +80,18 @@ def train():
             args.dataset_root = COCO_ROOT
         cfg = coco
         dataset = COCODetection(root=args.dataset_root,
-                                transform=SSDAugmentation(cfg['min_dim'], MEANS))
+                                transform=TransformTrain(cfg['min_dim'], MEANS))
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = VOCDetection(root=args.dataset_root,
-                               transform=SSDAugmentation(cfg['min_dim'], MEANS))
+                               transform=TransformTrain(cfg['min_dim'], MEANS))
     elif args.dataset == 'things':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
-        dataset = ListDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
+        dataset = SSDDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
 
     if args.visdom:
         import visdom

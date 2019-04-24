@@ -398,20 +398,40 @@ class PhotometricDistort(object):
         return self.rand_light_noise(im, boxes, labels)
 
 
-class SSDAugmentation(object):
+class TransformTrain(object):
     def __init__(self, size=300, mean=(104, 117, 123)):
         self.mean = mean
         self.size = size
         self.augment = Compose([
-            ConvertFromInts(),
-            ToAbsoluteCoords(),
-            PhotometricDistort(),
-            Expand(self.mean),
-            RandomSampleCrop(),
-            RandomMirror(),
-            ToPercentCoords(),
-            Resize(self.size),
-            SubtractMeans(self.mean)
+            ConvertFromInts(),          # 图片从Int类型转换成Float
+            ToAbsoluteCoords(),         # 标签从百分比转换成绝对值
+            PhotometricDistort(),       # 光度畸变 HSV to BGR
+            Expand(self.mean),          # 放大缩小图片
+            RandomSampleCrop(),         # 随机裁剪
+            RandomMirror(),             # 随机镜像
+            ToPercentCoords(),          # 标签从绝对值转换成百分比
+            Resize(self.size),          # Resize
+            SubtractMeans(self.mean)    # 减去均值
+        ])
+
+    def __call__(self, img, boxes, labels):
+        return self.augment(img, boxes, labels)
+
+
+class TransformTest(object):
+    def __init__(self, size=300, mean=(104, 117, 123)):
+        self.mean = mean
+        self.size = size
+        self.augment = Compose([
+            ConvertFromInts(),          # 图片从Int类型转换成Float
+            # ToAbsoluteCoords(),         # 标签从百分比转换成绝对值
+            # PhotometricDistort(),       # 光度畸变 HSV to BGR
+            # Expand(self.mean),          # 放大缩小图片
+            # RandomSampleCrop(),         # 随机裁剪
+            # RandomMirror(),             # 随机镜像
+            # ToPercentCoords(),          # 标签从绝对值转换成百分比
+            Resize(self.size),          # Resize
+            SubtractMeans(self.mean)    # 减去均值
         ])
 
     def __call__(self, img, boxes, labels):
