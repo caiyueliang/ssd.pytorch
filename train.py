@@ -17,9 +17,6 @@ import argparse
 from data.datasets import ListDataset
 
 
-THINGS_ROOT = os.path.join(HOME, 'deeplearning/Data/AI比赛/特定物品识别/images_train/')
-
-
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
@@ -33,13 +30,13 @@ parser.add_argument('--dataset_root', default=VOC_ROOT,
                     help='Dataset root directory path')
 parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
                     help='Pretrained base model')
-parser.add_argument('--batch_size', default=8, type=int,
+parser.add_argument('--batch_size', default=4, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from')
 parser.add_argument('--start_iter', default=0, type=int,
                     help='Resume training at this iter')
-parser.add_argument('--num_workers', default=4, type=int,
+parser.add_argument('--num_workers', default=1, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
@@ -150,12 +147,12 @@ def train():
         epoch_plot = create_vis_plot('Epoch', 'Loss', vis_title, vis_legend)
 
     # TODO
-    if args.dataset == 'things':
-        data_loader = data.DataLoader(dataset, args.batch_size,
-                                      num_workers=args.num_workers,
-                                      shuffle=True)
-    else:
-        data_loader = data.DataLoader(dataset, args.batch_size,
+    # if args.dataset == 'things':
+    #     data_loader = data.DataLoader(dataset, args.batch_size,
+    #                                   num_workers=args.num_workers,
+    #                                   shuffle=True)
+    # else:
+    data_loader = data.DataLoader(dataset, args.batch_size,
                                       num_workers=args.num_workers,
                                       shuffle=True, collate_fn=detection_collate,
                                       pin_memory=True)
@@ -177,6 +174,8 @@ def train():
 
         # load train data
         images, targets = next(batch_iterator)
+        # print(images.size())
+        # print('targets', targets)
 
         if args.cuda:
             images = Variable(images.cuda())

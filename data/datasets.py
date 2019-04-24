@@ -69,7 +69,7 @@ class ImageFolder(Dataset):
 
 
 class ListDataset(Dataset):
-    def __init__(self, root_path, image_file, train=False, img_size=416):
+    def __init__(self, root_path, image_file, train=False, img_size=300):
         self.root_path = root_path
         self.image_file = image_file
         print('ListDataset', os.path.join(self.root_path, self.image_file))
@@ -143,11 +143,25 @@ class ListDataset(Dataset):
         labels = None
         if os.path.exists(label_path):
             labels = np.loadtxt(label_path).reshape(-1, 5)
-            # print('labels', labels, type(labels))
-            labels_1 = labels[:, 1:]
+            # print('labels', labels)
+            x_center = labels[:, 1:2]
+            y_center = labels[:, 2:3]
+            w = labels[:, 3:4]
+            h = labels[:, 4:]
+            x1 = x_center - w / 2
+            y1 = y_center - h / 2
+            x2 = x_center + w / 2
+            y2 = y_center + h / 2
+            # print('x1', x1)
+            # print('y1', y1)
+            # print('x2', x2)
+            # print('y2', y2)
+
             labels_2 = labels[:, :1]
+            # print('labels_2', labels_2)
             # new_labels = [labels_1, labels_2]
-            new_labels = np.concatenate((labels_1, labels_2), axis=1)
+            new_labels = np.concatenate((x1, y1, x2, y2, labels_2), axis=1)
+            # new_labels = torch.from_numpy(new_labels)
             # print('new_labels', new_labels)
 
         # ==============================================================================================
@@ -205,12 +219,14 @@ class ListDataset(Dataset):
         # # ==============================================================================================
         # # Fill matrix
         # # filled_labels size (50, 5);每一行表示一个标签（最多50个），分别表示：类别，x轴中心点，y轴中心点，w，h
-        filled_labels = np.zeros((self.max_objects, 5))
-        if new_labels is not None:
-            filled_labels[range(len(new_labels))[:self.max_objects]] = new_labels[:self.max_objects]
-        filled_labels = torch.from_numpy(filled_labels)
+        # filled_labels = np.zeros((self.max_objects, 5))
+        # if new_labels is not None:
+        #     filled_labels[range(len(new_labels))[:self.max_objects]] = new_labels[:self.max_objects]
+        # filled_labels = torch.from_numpy(filled_labels)
 
-        return input_img, filled_labels
+        # print('input_img', input_img.size())
+        # print(type(new_labels), new_labels)
+        return input_img, new_labels
 
     def __len__(self):
         return len(self.img_files)
