@@ -1,3 +1,4 @@
+# encoding:utf-8
 from data import *
 from utils.augmentations import SSDAugmentation
 from layers.modules import MultiBoxLoss
@@ -41,6 +42,7 @@ parser.add_argument('--save_folder', default='weights/', help='Directory for sav
 parser.add_argument('--total_epochs', default=100, type=int, help='total_epochs')
 parser.add_argument('--decay_epoch', default=40, type=int, help='decay_epoch')
 parser.add_argument('--min_loss', default=5, type=float, help='min_loss')
+parser.add_argument('--class_num', default=15, type=int, help='class_num')
 
 args = parser.parse_args()
 
@@ -68,22 +70,26 @@ def train():
                   "--dataset_root was not specified.")
             args.dataset_root = COCO_ROOT
         cfg = coco
-        dataset = COCODetection(root=args.dataset_root,
-                                transform=SSDAugmentation(cfg['min_dim'], MEANS))
+        dataset = COCODetection(root=args.dataset_root, transform=SSDAugmentation(cfg['min_dim'], MEANS))
+        ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
+
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
-        dataset = VOCDetection(root=args.dataset_root,
-                               transform=SSDAugmentation(cfg['min_dim'], MEANS))
-    elif args.dataset == 'things':
+        dataset = VOCDetection(root=args.dataset_root, transform=SSDAugmentation(cfg['min_dim'], MEANS))
+        ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
+
+    else:
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = ListDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
         test_dataset = ListDataset(os.path.join(args.dataset_root, 'test'), 'image_path.txt', train=False)
+        # cfg['num_classes'] = args.class_num
+        ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
+        print('cfg', cfg)
 
-    ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
     net = ssd_net
 
     if args.cuda:
@@ -136,6 +142,7 @@ def train():
     min_loss = args.min_loss
 
     for epoch in range(args.total_epochs):
+        print("==================================================================")
         net.train()
         loc_loss = 0.0
         conf_loss = 0.0
@@ -211,7 +218,7 @@ def test(model, criterion, test_data_loader):
         loc_loss /= len(test_data_loader)
         conf_loss /= len(test_data_loader)
         test_loss /= len(test_data_loader)
-        print('train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f, time_avg: %lf' %
+        print('train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f, time_avg: %lf\n' %
               (test_loss, conf_loss, loc_loss, time_avg))
 
         return test_loss

@@ -1,3 +1,4 @@
+# encoding:utf-8
 from data import *
 from utils.augmentations import SSDAugmentation
 from layers.modules import MultiBoxLoss
