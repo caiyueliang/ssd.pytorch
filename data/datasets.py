@@ -143,6 +143,7 @@ class SSDDataset(Dataset):
         label_path = self.label_files[index % len(self.img_files)].rstrip()
 
         labels = None
+        new_labels = None
         if os.path.exists(label_path):
             labels = np.loadtxt(label_path).reshape(-1, 5)
             # print('labels', labels)
@@ -159,10 +160,10 @@ class SSDDataset(Dataset):
             # print('x2', x2)
             # print('y2', y2)
 
-            labels_2 = labels[:, :1]
+            c = labels[:, :1]
             # print('labels_2', labels_2)
             # new_labels = [labels_1, labels_2]
-            new_labels = np.concatenate((x1, y1, x2, y2, labels_2), axis=1)
+            new_labels = np.concatenate((x1, y1, x2, y2, c), axis=1)
             # new_labels = torch.from_numpy(new_labels)
             # print('new_labels', new_labels)
 
@@ -239,7 +240,7 @@ class SSDDataset(Dataset):
 
             return torch.from_numpy(img).permute(2, 0, 1), target
         else:
-            return torch.from_numpy(img).permute(2, 0, 1), target
+            return torch.from_numpy(img).permute(2, 0, 1), new_labels
 
     def __len__(self):
         return len(self.img_files)
