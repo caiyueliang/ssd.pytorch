@@ -68,7 +68,7 @@ class ImageFolder(Dataset):
         return len(self.img_files)
 
 
-class ListDataset(Dataset):
+class SSDDataset(Dataset):
     def __init__(self, root_path, image_file, train=False, img_size=300, transform=None):
         self.transform = transform
 

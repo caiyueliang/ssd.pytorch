@@ -15,7 +15,7 @@ import torch.nn.init as init
 import torch.utils.data as data
 import numpy as np
 import argparse
-from data.datasets import ListDataset
+from data.datasets import SSDDataset
 
 
 def str2bool(v):
@@ -84,16 +84,16 @@ def train():
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
-        dataset = ListDataset(root_path=os.path.join(args.dataset_root, 'train'),
-                              image_file='image_path.txt',
-                              img_size=300,
-                              train=True,
-                              transform=SSDAugmentation(300, MEANS))
-        test_dataset = ListDataset(root_path=os.path.join(args.dataset_root, 'test'),
-                                   image_file='image_path.txt',
-                                   img_size=300,
-                                   train=False,
-                                   transform=None)
+        dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'train'),
+                             image_file='image_path.txt',
+                             img_size=300,
+                             train=True,
+                             transform=SSDAugmentation(300, MEANS))
+        test_dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
+                                  image_file='image_path.txt',
+                                  img_size=300,
+                                  train=False,
+                                  transform=None)
         # cfg['num_classes'] = args.class_num
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
         print('cfg', cfg)
