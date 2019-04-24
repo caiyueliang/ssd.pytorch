@@ -1,0 +1,1 @@
+python train.py --dataset "things" --dataset_root '/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/'
