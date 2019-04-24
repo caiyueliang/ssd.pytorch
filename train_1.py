@@ -24,34 +24,23 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
 train_set = parser.add_mutually_exclusive_group()
-parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO', 'things'],
-                    type=str, help='VOC or COCO or things')
-parser.add_argument('--dataset_root', default=VOC_ROOT,
-                    help='Dataset root directory path')
-parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
-                    help='Pretrained base model')
-parser.add_argument('--batch_size', default=16, type=int,
-                    help='Batch size for training')
-parser.add_argument('--resume', default=None, type=str,
-                    help='Checkpoint state_dict file to resume training from')
-parser.add_argument('--start_iter', default=0, type=int,
-                    help='Resume training at this iter')
-parser.add_argument('--num_workers', default=4, type=int,
-                    help='Number of workers used in dataloading')
-parser.add_argument('--cuda', default=True, type=str2bool,
-                    help='Use CUDA to train model')
-parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
-                    help='initial learning rate')
-parser.add_argument('--momentum', default=0.9, type=float,
-                    help='Momentum value for optim')
-parser.add_argument('--weight_decay', default=5e-4, type=float,
-                    help='Weight decay for SGD')
-parser.add_argument('--gamma', default=0.1, type=float,
-                    help='Gamma update for SGD')
-parser.add_argument('--visdom', default=False, type=str2bool,
-                    help='Use visdom for loss visualization')
-parser.add_argument('--save_folder', default='weights/',
-                    help='Directory for saving checkpoint models')
+parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO', 'things'], type=str, help='VOC or COCO or things')
+parser.add_argument('--dataset_root', default=VOC_ROOT, help='Dataset root directory path')
+parser.add_argument('--basenet', default='vgg16_reducedfc.pth', help='Pretrained base model')
+parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
+parser.add_argument('--resume', default=None, type=str, help='Checkpoint state_dict file to resume training from')
+parser.add_argument('--start_iter', default=0, type=int, help='Resume training at this iter')
+parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--cuda', default=True, type=str2bool, help='Use CUDA to train model')
+parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
+parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
+parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
+parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
+parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
+
+parser.add_argument('--total_epochs', default=100, type=int, help='total_epochs')
+parser.add_argument('--decay_epoch', default=40, type=int, help='decay_epoch')
+
 args = parser.parse_args()
 
 
@@ -92,10 +81,6 @@ def train():
         cfg = voc
         dataset = ListDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
 
-    if args.visdom:
-        import visdom
-        viz = visdom.Visdom()
-
     ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
     net = ssd_net
 
@@ -126,25 +111,10 @@ def train():
     criterion = MultiBoxLoss(cfg['num_classes'], 0.5, True, 0, True, 3, 0.5,
                              False, args.cuda)
 
-    net.train()
-    # loss counters
-    loc_loss = 0
-    conf_loss = 0
-    epoch = 0
     print('Loading the dataset...')
-
-    epoch_size = len(dataset) // args.batch_size
     print('Training SSD on:', dataset.name)
     print('Using the specified args:')
     print(args)
-
-    step_index = 0
-
-    if args.visdom:
-        vis_title = 'SSD.PyTorch on ' + dataset.name
-        vis_legend = ['Loc Loss', 'Conf Loss', 'Total Loss']
-        iter_plot = create_vis_plot('Iteration', 'Loss', vis_title, vis_legend)
-        epoch_plot = create_vis_plot('Epoch', 'Loss', vis_title, vis_legend)
 
     # TODO
     # if args.dataset == 'things':
@@ -157,11 +127,18 @@ def train():
                                       shuffle=True, collate_fn=detection_collate,
                                       pin_memory=True)
 
-    # create batch iterator
-    # batch_iterator = iter(data_loader)
-    for epoch in range(200):
-        print(epoch)
+    min_loss = 5.0
+
+    for epoch in range(args.total_epochs):
+        net.train()
+        loc_loss = 0.0
+        conf_loss = 0.0
         train_loss = 0.0
+
+        if epoch >= args.decay_epoch and epoch % args.decay_epoch == 0:
+            args.lr *= 0.1
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = args.lr
 
         for batch_i, (images, targets) in enumerate(data_loader):
             # for iteration in range(args.start_iter, cfg['max_iter']):
@@ -173,9 +150,9 @@ def train():
             #         conf_loss = 0
             #         epoch += 1
 
-            if batch_i in cfg['lr_steps']:
-                step_index += 1
-                adjust_learning_rate(optimizer, args.gamma, step_index)
+            # if batch_i in cfg['lr_steps']:
+            #     step_index += 1
+            #     adjust_learning_rate(optimizer, args.gamma, step_index)
 
             # load train data
             # images, targets = next(batch_iterator)
@@ -188,34 +165,103 @@ def train():
             else:
                 images = Variable(images)
                 targets = [Variable(ann, volatile=True) for ann in targets]
-            # forward
-            t0 = time.time()
-            out = net(images)
-            # print('out', out)
 
-            # backprop
+            # forward
+            out = net(images)
+            # back prop
             optimizer.zero_grad()
             loss_l, loss_c = criterion(out, targets)
             loss = loss_l + loss_c
             loss.backward()
             optimizer.step()
-            t1 = time.time()
             loc_loss += loss_l.item()
             conf_loss += loss_c.item()
+            train_loss += loc_loss + conf_loss
 
-            if batch_i % 20 == 0:
-                print('iter ' + repr(batch_i) + ' || Loss: %.4f ||' % (loss.item()), end=' ')
-                print('timer: %.4f sec.' % (t1 - t0))
+            loc_loss /= len(data_loader)
+            conf_loss /= len(conf_loss)
+            train_loss /= len(train_loss)
+        print('[epoch] %d || Train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f' % (epoch, train_loss, conf_loss, loc_loss))
+        if train_loss < min_loss:
+            min_loss = train_loss
+            print('save best model')
+            torch.save(ssd_net.state_dict(), args.save_folder + '' + args.dataset + '.pth')
 
-            # if args.visdom:
-            #     update_vis_plot(batch_i, loss_l.item(), loss_c.item(), iter_plot, epoch_plot, 'append')
-
-            # if batch_i != 0 and batch_i % 5000 == 0:
-            #     print('Saving state, iter:', batch_i)
-            #     torch.save(ssd_net.state_dict(), 'weights/ssd300_COCO_' + repr(batch_i) + '.pth')
-
-        torch.save(ssd_net.state_dict(), args.save_folder + '' + args.dataset + '.pth')
-
+    # def test(self):
+    #     self.model.eval()
+    #     test_loss = 0.0
+    #
+    #     x_loss = 0.0
+    #     y_loss = 0.0
+    #     w_loss = 0.0
+    #     h_loss = 0.0
+    #     conf_loss = 0.0
+    #     cls_loss = 0.0
+    #     avg_recall = 0.0
+    #     avg_precision = 0.0
+    #
+    #     time_start = time.time()
+    #     # 测试集
+    #     for batch_i, (_, imgs, targets) in enumerate(self.test_loader):
+    #         imgs = Variable(imgs.type(self.tensor))
+    #         targets = Variable(targets.type(self.tensor), requires_grad=False)
+    #
+    #         loss = self.model(imgs, targets)
+    #         test_loss += loss.item()
+    #
+    #         if self.opt.detail_log:
+    #             print("[Batch %d/%d] [Losses: x %.5f, y %.5f, w %.5f, h %.5f, conf %.5f, cls %.5f,"
+    #                   " total %.5f, recall: %.5f, precision: %.5f]" % (
+    #                         batch_i,
+    #                         len(self.train_loader),
+    #                         self.model.losses["x"],
+    #                         self.model.losses["y"],
+    #                         self.model.losses["w"],
+    #                         self.model.losses["h"],
+    #                         self.model.losses["conf"],
+    #                         self.model.losses["cls"],
+    #                         loss.item(),
+    #                         self.model.losses["recall"],
+    #                         self.model.losses["precision"],
+    #                         )
+    #                   )
+    #
+    #         x_loss += self.model.losses["x"]
+    #         y_loss += self.model.losses["y"]
+    #         w_loss += self.model.losses["w"]
+    #         h_loss += self.model.losses["h"]
+    #         conf_loss += self.model.losses["conf"]
+    #         cls_loss += self.model.losses["cls"]
+    #         avg_recall += self.model.losses["recall"]
+    #         avg_precision += self.model.losses["precision"]
+    #
+    #     time_end = time.time()
+    #     time_avg = float(time_end - time_start) / float(len(self.test_loader.dataset))
+    #
+    #     x_loss /= len(self.test_loader)
+    #     y_loss /= len(self.test_loader)
+    #     w_loss /= len(self.test_loader)
+    #     h_loss /= len(self.test_loader)
+    #     conf_loss /= len(self.test_loader)
+    #     cls_loss /= len(self.test_loader)
+    #     avg_recall /= len(self.test_loader)
+    #     avg_precision /= len(self.test_loader)
+    #
+    #     avg_loss = test_loss / len(self.test_loader)
+    #     print('[Test] loss: %.5f time: %.5f [x %.5f, y %.5f, w %.5f, h %.5f, conf %.5f, cls %.5f,'
+    #           ' recall: %.5f, precision: %.5f]' % (
+    #             avg_loss,
+    #             time_avg,
+    #             x_loss,
+    #             y_loss,
+    #             w_loss,
+    #             h_loss,
+    #             conf_loss,
+    #             cls_loss,
+    #             avg_recall,
+    #             avg_precision)
+    #           )
+    #     return avg_loss
 
 def adjust_learning_rate(optimizer, gamma, step):
     """Sets the learning rate to the initial LR decayed by 10 at every
