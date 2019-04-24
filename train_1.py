@@ -40,6 +40,7 @@ parser.add_argument('--save_folder', default='weights/', help='Directory for sav
 
 parser.add_argument('--total_epochs', default=100, type=int, help='total_epochs')
 parser.add_argument('--decay_epoch', default=40, type=int, help='decay_epoch')
+parser.add_argument('--min_loss', default=5, type=float, help='min_loss')
 
 args = parser.parse_args()
 
@@ -80,6 +81,7 @@ def train():
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = ListDataset(os.path.join(args.dataset_root, 'train'), 'image_path.txt', train=True)
+        test_dataset = ListDataset(os.path.join(args.dataset_root, 'test'), 'image_path.txt', train=False)
 
     ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
     net = ssd_net
@@ -123,11 +125,15 @@ def train():
     #                                   shuffle=True)
     # else:
     data_loader = data.DataLoader(dataset, args.batch_size,
-                                      num_workers=args.num_workers,
-                                      shuffle=True, collate_fn=detection_collate,
-                                      pin_memory=True)
+                                  num_workers=args.num_workers,
+                                  shuffle=True, collate_fn=detection_collate,
+                                  pin_memory=True)
+    test_data_loader = data.DataLoader(test_dataset, args.batch_size,
+                                       num_workers=args.num_workers,
+                                       collate_fn=detection_collate,
+                                       pin_memory=True)
 
-    min_loss = 5.0
+    min_loss = args.min_loss
 
     for epoch in range(args.total_epochs):
         net.train()
@@ -140,25 +146,8 @@ def train():
         for param_group in optimizer.param_groups:
             param_group['lr'] = args.lr
 
+        time_start = time.time()
         for batch_i, (images, targets) in enumerate(data_loader):
-            # for iteration in range(args.start_iter, cfg['max_iter']):
-            #     if args.visdom and batch_i != 0 and (batch_i % epoch_size == 0):
-            #         update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
-            #                         'append', epoch_size)
-            #         # reset epoch loss counters
-            #         loc_loss = 0
-            #         conf_loss = 0
-            #         epoch += 1
-
-            # if batch_i in cfg['lr_steps']:
-            #     step_index += 1
-            #     adjust_learning_rate(optimizer, args.gamma, step_index)
-
-            # load train data
-            # images, targets = next(batch_iterator)
-            # print(images.size())
-            # print('targets', targets)
-
             if args.cuda:
                 images = Variable(images.cuda())
                 targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
@@ -176,92 +165,57 @@ def train():
             optimizer.step()
             loc_loss += loss_l.item()
             conf_loss += loss_c.item()
-            train_loss += loc_loss + conf_loss
+            train_loss += loss_l.item() + loss_c.item()
 
-            loc_loss /= len(data_loader)
-            conf_loss /= len(conf_loss)
-            train_loss /= len(train_loss)
-        print('[epoch] %d || Train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f' % (epoch, train_loss, conf_loss, loc_loss))
-        if train_loss < min_loss:
-            min_loss = train_loss
+        time_end = time.time()
+        loc_loss /= len(data_loader)
+        conf_loss /= len(data_loader)
+        train_loss /= len(data_loader)
+        print('[epoch] %d train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f, lr: %lf, time: %lf' %
+              (epoch, train_loss, conf_loss, loc_loss, args.lr, time_end - time_start))
+
+        test_loss = test(net, criterion, test_data_loader)
+        if test_loss < min_loss:
+            min_loss = test_loss
             print('save best model')
             torch.save(ssd_net.state_dict(), args.save_folder + '' + args.dataset + '.pth')
 
-    # def test(self):
-    #     self.model.eval()
-    #     test_loss = 0.0
-    #
-    #     x_loss = 0.0
-    #     y_loss = 0.0
-    #     w_loss = 0.0
-    #     h_loss = 0.0
-    #     conf_loss = 0.0
-    #     cls_loss = 0.0
-    #     avg_recall = 0.0
-    #     avg_precision = 0.0
-    #
-    #     time_start = time.time()
-    #     # 测试集
-    #     for batch_i, (_, imgs, targets) in enumerate(self.test_loader):
-    #         imgs = Variable(imgs.type(self.tensor))
-    #         targets = Variable(targets.type(self.tensor), requires_grad=False)
-    #
-    #         loss = self.model(imgs, targets)
-    #         test_loss += loss.item()
-    #
-    #         if self.opt.detail_log:
-    #             print("[Batch %d/%d] [Losses: x %.5f, y %.5f, w %.5f, h %.5f, conf %.5f, cls %.5f,"
-    #                   " total %.5f, recall: %.5f, precision: %.5f]" % (
-    #                         batch_i,
-    #                         len(self.train_loader),
-    #                         self.model.losses["x"],
-    #                         self.model.losses["y"],
-    #                         self.model.losses["w"],
-    #                         self.model.losses["h"],
-    #                         self.model.losses["conf"],
-    #                         self.model.losses["cls"],
-    #                         loss.item(),
-    #                         self.model.losses["recall"],
-    #                         self.model.losses["precision"],
-    #                         )
-    #                   )
-    #
-    #         x_loss += self.model.losses["x"]
-    #         y_loss += self.model.losses["y"]
-    #         w_loss += self.model.losses["w"]
-    #         h_loss += self.model.losses["h"]
-    #         conf_loss += self.model.losses["conf"]
-    #         cls_loss += self.model.losses["cls"]
-    #         avg_recall += self.model.losses["recall"]
-    #         avg_precision += self.model.losses["precision"]
-    #
-    #     time_end = time.time()
-    #     time_avg = float(time_end - time_start) / float(len(self.test_loader.dataset))
-    #
-    #     x_loss /= len(self.test_loader)
-    #     y_loss /= len(self.test_loader)
-    #     w_loss /= len(self.test_loader)
-    #     h_loss /= len(self.test_loader)
-    #     conf_loss /= len(self.test_loader)
-    #     cls_loss /= len(self.test_loader)
-    #     avg_recall /= len(self.test_loader)
-    #     avg_precision /= len(self.test_loader)
-    #
-    #     avg_loss = test_loss / len(self.test_loader)
-    #     print('[Test] loss: %.5f time: %.5f [x %.5f, y %.5f, w %.5f, h %.5f, conf %.5f, cls %.5f,'
-    #           ' recall: %.5f, precision: %.5f]' % (
-    #             avg_loss,
-    #             time_avg,
-    #             x_loss,
-    #             y_loss,
-    #             w_loss,
-    #             h_loss,
-    #             conf_loss,
-    #             cls_loss,
-    #             avg_recall,
-    #             avg_precision)
-    #           )
-    #     return avg_loss
+
+def test(model, criterion, test_data_loader):
+        model.eval()
+        loc_loss = 0.0
+        conf_loss = 0.0
+        test_loss = 0.0
+
+        time_start = time.time()
+        # 测试集
+        for batch_i, (images, targets) in enumerate(test_data_loader):
+            if args.cuda:
+                images = Variable(images.cuda())
+                targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
+            else:
+                images = Variable(images)
+                targets = [Variable(ann, volatile=True) for ann in targets]
+            # imgs = Variable(imgs.type(self.tensor))
+            # targets = Variable(targets.type(self.tensor), requires_grad=False)
+
+            out = model(images)
+            loss_l, loss_c = criterion(out, targets)
+            loc_loss += loss_l.item()
+            conf_loss += loss_c.item()
+            test_loss += loss_l.item() + loss_c.item()
+
+        time_end = time.time()
+        time_avg = float(time_end - time_start) / float(len(test_data_loader.dataset))
+
+        loc_loss /= len(test_data_loader)
+        conf_loss /= len(test_data_loader)
+        test_loss /= len(test_data_loader)
+        print('train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f, time_avg: %lf' %
+              (test_loss, conf_loss, loc_loss, time_avg))
+
+        return test_loss
+
 
 def adjust_learning_rate(optimizer, gamma, step):
     """Sets the learning rate to the initial LR decayed by 10 at every
