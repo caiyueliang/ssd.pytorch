@@ -150,10 +150,10 @@ def train():
         for batch_i, (images, targets) in enumerate(data_loader):
             if args.cuda:
                 images = Variable(images.cuda())
-                targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
+                targets = [Variable(ann.cuda()) for ann in targets]
             else:
                 images = Variable(images)
-                targets = [Variable(ann, volatile=True) for ann in targets]
+                targets = [Variable(ann) for ann in targets]
 
             # forward
             out = net(images)
@@ -192,10 +192,10 @@ def test(model, criterion, test_data_loader):
         for batch_i, (images, targets) in enumerate(test_data_loader):
             if args.cuda:
                 images = Variable(images.cuda())
-                targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
+                targets = [Variable(ann.cuda()) for ann in targets]
             else:
                 images = Variable(images)
-                targets = [Variable(ann, volatile=True) for ann in targets]
+                targets = [Variable(ann) for ann in targets]
             # imgs = Variable(imgs.type(self.tensor))
             # targets = Variable(targets.type(self.tensor), requires_grad=False)
 
