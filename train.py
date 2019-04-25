@@ -1,6 +1,6 @@
 # encoding:utf-8
 from data import *
-from utils.transform import TransformTrain, TransformTest
+from utils.transform import TrainformTrain, TestformTest
 from layers.modules import MultiBoxLoss
 from ssd import build_ssd
 import os
@@ -80,13 +80,13 @@ def train():
             args.dataset_root = COCO_ROOT
         cfg = coco
         dataset = COCODetection(root=args.dataset_root,
-                                transform=TransformTrain(cfg['min_dim'], MEANS))
+                                transform=TrainformTrain(cfg['min_dim'], MEANS))
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = VOCDetection(root=args.dataset_root,
-                               transform=TransformTrain(cfg['min_dim'], MEANS))
+                               transform=TrainformTrain(cfg['min_dim'], MEANS))
     elif args.dataset == 'things':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')

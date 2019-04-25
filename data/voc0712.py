@@ -109,6 +109,7 @@ class VOCDetection(data.Dataset):
         for (year, name) in image_sets:
             rootpath = osp.join(self.root, 'VOC' + year)
             for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+                print(rootpath, line.strip())
                 self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
@@ -132,8 +133,8 @@ class VOCDetection(data.Dataset):
 
         if self.target_transform is not None:
             target = self.target_transform(target, width, height)
-        print('target_1', target)
-        cv2.imshow("target_1", img)
+        # print('target_1', target)
+        # cv2.imshow("target_1", img)
 
         if self.transform is not None:
             target = np.array(target)
@@ -143,9 +144,9 @@ class VOCDetection(data.Dataset):
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(2, 0, 1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-        print('target_2', target)
-        cv2.imshow("target_2", img)
-        cv2.waitKey()
+        # print('target_2', target)
+        # cv2.imshow("target_2", img)
+        # cv2.waitKey()
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width
         # return torch.from_numpy(img), target, height, width
 
