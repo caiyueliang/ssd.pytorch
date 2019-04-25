@@ -459,8 +459,8 @@ def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=3
 
         detections = net(x).data
 
-        save_image(img_path, detections, w, h, save_folder)
-        # save_detect_file(img_path, detections, w, h, save_folder)
+        # save_image(img_path, detections, w, h, save_folder)
+        save_detect_file(img_path, detections, w, h, save_folder)
     print('time', time.time() - start)
 
 
