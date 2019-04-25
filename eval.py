@@ -401,10 +401,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         im, gt, h, w = dataset.pull_item(i)
 
         x = Variable(im.unsqueeze(0))
+
         if args.cuda:
             x = x.cuda()
         _t['im_detect'].tic()
         detections = net(x).data
+        print('detections', detections.size())
         detect_time = _t['im_detect'].toc(average=False)
 
         # skip j = 0, because it's the background class
@@ -422,10 +424,10 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             scores = dets[:, 0].cpu().numpy()
             cls_dets = np.hstack((boxes.cpu().numpy(),
                                   scores[:, np.newaxis])).astype(np.float32, copy=False)
+            print('cls_dets', cls_dets)
             all_boxes[j][i] = cls_dets
 
-        print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
-                                                    num_images, detect_time))
+        print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1, num_images, detect_time))
 
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
