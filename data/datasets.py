@@ -10,59 +10,52 @@ import torch
 from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms
-# from torchvision import transforms as T
 
-# import matplotlib.pyplot as plt
-# import matplotlib.patches as patches
 
-# from skimage.transform import resize
-
-# import sys
+def is_image(file_path):
+    if '.jpg' in file_path or '.jpeg' in file_path or '.png' in file_path or '.bmp' in file_path:
+        return True
+    else:
+        return False
 
 
 class ImageFolder(Dataset):
-    def __init__(self, folder_path, img_size=416):
-        # self.files = sorted(glob.glob('%s/*.*' % folder_path))
-        self.img_files = sorted(glob.glob('%s/*/*.*' % folder_path))
+    def __init__(self, folder_path, img_size=300, transform=None):
+        self.img_files = []
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if is_image(file):
+                    self.img_files.append(os.path.join(root, file))
+        print("get image number", len(self.img_files))
+
         self.img_shape = img_size
+        self.transform = transform
 
     def __getitem__(self, index):
-        #  Image
         img_path = self.img_files[index % len(self.img_files)].rstrip()
         img = cv2.imread(img_path)
+        height, width, channels = img.shape
 
-        img = self.padding(img)                                     # padding
-        img = cv2.resize(img, (self.img_shape, self.img_shape))     # resize
+        if self.transform is not None:
+            img, boxes, labels = self.transform(img, None, None)
 
-        input_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))         # opencv 转 PIL
-        input_img = transforms.ToTensor()(input_img)
-        input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
-        return img_path, input_img
+            # to rgb
+            img = img[:, :, (2, 1, 0)]
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+            return transforms.ToTensor()(img), target, height, width, img_path
 
-    # def __getitem__(self, index):
-    #     img_path = self.files[index % len(self.files)]
-    #     # Extract image
-    #     img = np.array(Image.open(img_path))
-    #     # Resize and normalize
-    #     input_img = resize(img, (self.img_shape, self.img_shape, 3), mode='reflect')
-    #     # Channels-first
-    #     input_img = np.transpose(input_img, (2, 0, 1))
-    #     # As pytorch tensor
-    #     input_img = torch.from_numpy(input_img).float()
-    #
-    #     return img_path, input_img
+    def pull_item(self, index):
+        img_path = self.img_files[index % len(self.img_files)].rstrip()
+        img = cv2.imread(img_path)
+        height, width, channels = img.shape
 
-    def padding(self, img):
-        h, w, _ = img.shape
-        # print(img.shape)
-        dim_diff = np.abs(h - w)
-        pad1, pad2 = dim_diff // 2, dim_diff - dim_diff // 2
-        pad = ((pad1, pad2), (0, 0), (0, 0)) if h <= w else ((0, 0), (pad1, pad2), (0, 0))
-        # print('pad', pad)
-        input_img = np.pad(img, pad, 'constant', constant_values=0)
-        padded_h, padded_w, _ = input_img.shape
-        # print(input_img.shape)
-        return input_img
+        if self.transform is not None:
+            img, boxes, labels = self.transform(img, None, None)
+
+            # to rgb
+            img = img[:, :, (2, 1, 0)]
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+            return transforms.ToTensor()(img), target, height, width, img_path
 
     def __len__(self):
         return len(self.img_files)
@@ -88,55 +81,6 @@ class SSDDataset(Dataset):
         self.train = train
         self.max_objects = 50                       # 每张图片最多支持多少个标签
 
-    # def __getitem__(self, index):
-    #     # ==============================================================================================
-    #     #  Label
-    #     label_path = self.label_files[index % len(self.img_files)].rstrip()
-    #
-    #     labels = None
-    #     if os.path.exists(label_path):
-    #         labels = np.loadtxt(label_path).reshape(-1, 5)
-    #
-    #     # ==============================================================================================
-    #     #  Image
-    #     img_path = self.img_files[index % len(self.img_files)].rstrip()
-    #     img = np.array(Image.open(img_path))
-    #
-    #     while len(img.shape) != 3:
-    #         index += 1
-    #         img_path = self.img_files[index % len(self.img_files)].rstrip()
-    #         img = np.array(Image.open(img_path))
-    #
-    #     # 图片增广
-    #     if self.train:
-    #         img, labels = self.random_crop(img, labels)             # 随机裁剪
-    #         img = self.random_bright(img)                           # 随机调亮
-    #         # x = transforms.RandomHorizontalFlip()(x)
-    #
-    #     # Resize and normalize
-    #     input_img = resize(img, (self.img_shape, self.img_shape, 3), mode='reflect')
-    #     # input_img = transforms.ToTensor()(input_img)
-    #     # input_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input_img)
-    #
-    #     # show_img = input_img.copy()
-    #     # for label in labels:
-    #     #     cv2.rectangle(show_img, (int((label[1] - label[3]/2) * self.img_shape), int((label[2] - label[4]/2) * self.img_shape)),
-    #     #                   (int((label[1] + label[3]/2) * self.img_shape), int((label[2] + label[4]/2) * self.img_shape)), (0, 255, 0))
-    #     # cv2.imshow('image', show_img)
-    #     # cv2.waitKey(0)
-    #
-    #     input_img = np.transpose(input_img, (2, 0, 1))          # Channels-first
-    #     input_img = torch.from_numpy(input_img).float()         # As pytorch tensor
-    #
-    #     # ==============================================================================================
-    #     # Fill matrix
-    #     # filled_labels size (50, 5);每一行表示一个标签（最多50个），分别表示：类别，x轴中心点，y轴中心点，w，h
-    #     filled_labels = np.zeros((self.max_objects, 5))
-    #     if labels is not None:
-    #         filled_labels[range(len(labels))[:self.max_objects]] = labels[:self.max_objects]
-    #     filled_labels = torch.from_numpy(filled_labels)
-    #
-    #     return img_path, input_img, filled_labels
     def __getitem__(self, index):
         # ==============================================================================================
         #  Label

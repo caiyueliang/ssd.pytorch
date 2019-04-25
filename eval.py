@@ -14,7 +14,7 @@ from data import VOC_ROOT, VOCAnnotationTransform, VOCDetection, BaseTransform
 from data import VOC_CLASSES as labelmap
 import torch.utils.data as data
 from utils.transform import TestformTest
-from data.datasets import SSDDataset
+from data.datasets import SSDDataset, ImageFolder
 from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
@@ -459,8 +459,8 @@ def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=3
 
         detections = net(x).data
 
-        # save_image(img_path, detections, w, h, save_folder)
-        save_detect_file(img_path, detections, w, h, save_folder)
+        save_image(img_path, detections, w, h, save_folder)
+        # save_detect_file(img_path, detections, w, h, save_folder)
     print('time', time.time() - start)
 
 
@@ -633,11 +633,14 @@ if __name__ == '__main__':
     # dataset = VOCDetection(args.voc_root, [('2007', set_type)],
     #                        BaseTransform(300, dataset_mean),
     #                        VOCAnnotationTransform())
-    dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
-                              image_file='image_path.txt',
-                              img_size=300,
-                              train=False,
-                              transform=TestformTest(300))
+    # dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
+    #                      image_file='image_path.txt',
+    #                      img_size=300,
+    #                      train=False,
+    #                      transform=TestformTest(300))
+    dataset = ImageFolder(folder_path=os.path.join(args.dataset_root, 'test'),
+                          img_size=300,
+                          transform=TestformTest(300))
 
     if args.cuda:
         net = net.cuda()
