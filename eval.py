@@ -388,7 +388,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thr
     # all detections are collected into:
     #    all_boxes[cls][image] = N x 5 array of detections in
     #    (x1, y1, x2, y2, score)
-    all_boxes = [[[] for _ in range(num_images)] for _ in range(len(labelmap)+1)]
+    # all_boxes = [[[] for _ in range(num_images)] for _ in range(len(labelmap)+1)]
+    all_boxes = [[[] for _ in range(len(labelmap) + 1)] for _ in range(num_images)]
 
     # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
@@ -396,7 +397,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thr
     det_file = os.path.join(output_dir, 'detections.pkl')
 
     for i in range(num_images):
-        im, gt, h, w = dataset.pull_item(i)
+        im, gt, h, w, img_path = dataset.pull_item(i)
 
         x = Variable(im.unsqueeze(0))
 
@@ -407,7 +408,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thr
         print('detections', detections.size())
         detect_time = _t['im_detect'].toc(average=False)
 
-        # skip j = 0, because it's the background class
+        show_img = cv2.imread(img_path)
+
         for j in range(1, detections.size(1)):
             dets = detections[0, j, :]
             # print('dets', dets.size())
@@ -420,10 +422,16 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thr
             boxes[:, 2] *= w
             boxes[:, 1] *= h
             boxes[:, 3] *= h
+            print('j, boxes', j, boxes)
             scores = dets[:, 0].cpu().numpy()
             cls_dets = np.hstack((boxes.cpu().numpy(),
                                   scores[:, np.newaxis])).astype(np.float32, copy=False)
-            all_boxes[j][i] = cls_dets
+            all_boxes[i][j] = cls_dets
+
+            for label in boxes:
+                cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[2]), int(label[3])), (0, 255, 0))
+        cv2.imshow('new_image', show_img)
+        cv2.waitKey()
 
         # print('all_boxes', all_boxes)
         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1, num_images, detect_time))
@@ -435,10 +443,64 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thr
 
     print('Evaluating detections')
     evaluate_detections(all_boxes, output_dir, dataset)
+# def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thresh=0.05):
+#     num_images = len(dataset)
+#     # all detections are collected into:
+#     #    all_boxes[cls][image] = N x 5 array of detections in
+#     #    (x1, y1, x2, y2, score)
+#     all_boxes = [[[] for _ in range(num_images)] for _ in range(len(labelmap)+1)]
+#
+#     # timers
+#     _t = {'im_detect': Timer(), 'misc': Timer()}
+#     output_dir = get_output_dir('ssd300_120000', set_type)
+#     det_file = os.path.join(output_dir, 'detections.pkl')
+#
+#     for i in range(num_images):
+#         im, gt, h, w = dataset.pull_item(i)
+#
+#         x = Variable(im.unsqueeze(0))
+#
+#         if args.cuda:
+#             x = x.cuda()
+#         _t['im_detect'].tic()
+#         detections = net(x).data
+#         print('detections', detections.size())
+#         detect_time = _t['im_detect'].toc(average=False)
+#
+#         # skip j = 0, because it's the background class
+#         for j in range(1, detections.size(1)):
+#             dets = detections[0, j, :]
+#             # print('dets', dets.size())
+#             mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+#             dets = torch.masked_select(dets, mask).view(-1, 5)
+#             if dets.size(0) == 0:
+#                 continue
+#             boxes = dets[:, 1:]
+#             boxes[:, 0] *= w
+#             boxes[:, 2] *= w
+#             boxes[:, 1] *= h
+#             boxes[:, 3] *= h
+#             scores = dets[:, 0].cpu().numpy()
+#             cls_dets = np.hstack((boxes.cpu().numpy(),
+#                                   scores[:, np.newaxis])).astype(np.float32, copy=False)
+#             all_boxes[j][i] = cls_dets
+#
+#         # print('all_boxes', all_boxes)
+#         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1, num_images, detect_time))
+#
+#     # for i in range(num_images):
+#
+#     with open(det_file, 'wb') as f:
+#         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
+#
+#     print('Evaluating detections')
+#     evaluate_detections(all_boxes, output_dir, dataset)
+
 
 def mkdir_if_not_exist(path):
     if not os.path.exists(os.path.join(path)):
         os.makedirs(os.path.join(path))
+
 
 # def save_images(imgs_paths, img_detections, classes):
 #     print('[saving images] start ...')
@@ -637,14 +699,14 @@ if __name__ == '__main__':
     net.eval()
     print('Finished loading model!')
     # load data
-    dataset = VOCDetection(args.voc_root, [('2007', set_type)],
-                           BaseTransform(300, dataset_mean),
-                           VOCAnnotationTransform())
-    # dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
-    #                           image_file='image_path.txt',
-    #                           img_size=300,
-    #                           train=False,
-    #                           transform=TestformTest(300))
+    # dataset = VOCDetection(args.voc_root, [('2007', set_type)],
+    #                        BaseTransform(300, dataset_mean),
+    #                        VOCAnnotationTransform())
+    dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
+                              image_file='image_path.txt',
+                              img_size=300,
+                              train=False,
+                              transform=TestformTest(300))
 
     if args.cuda:
         net = net.cuda()

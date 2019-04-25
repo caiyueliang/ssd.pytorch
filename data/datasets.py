@@ -255,7 +255,7 @@ class SSDDataset(Dataset):
 
             # TODO
             # return torch.from_numpy(img).permute(2, 0, 1), target
-            return transforms.ToTensor()(img), target, height, width
+            return transforms.ToTensor()(img), target, height, width, img_path
 
     def __len__(self):
         return len(self.img_files)
