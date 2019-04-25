@@ -243,6 +243,62 @@ class SSDDataset(Dataset):
 
             return input_img, new_labels
 
+    def pull_item(self, index):
+        # ==============================================================================================
+        #  Label
+        label_path = self.label_files[index % len(self.img_files)].rstrip()
+
+        labels = None
+        new_labels = None
+        if os.path.exists(label_path):
+            labels = np.loadtxt(label_path).reshape(-1, 5)
+            x_center = labels[:, 1:2]
+            y_center = labels[:, 2:3]
+            w = labels[:, 3:4]
+            h = labels[:, 4:]
+            x1 = x_center - w / 2
+            y1 = y_center - h / 2
+            x2 = x_center + w / 2
+            y2 = y_center + h / 2
+
+            c = labels[:, :1]
+            new_labels = np.concatenate((x1, y1, x2, y2, c), axis=1)
+
+        # ==============================================================================================
+        #  Image
+        img_path = self.img_files[index % len(self.img_files)].rstrip()
+        img = cv2.imread(img_path)
+        height, width, channels = img.shape
+        
+        # h, w, c = img.shape
+        # show_img = img.copy()
+        # for label in new_labels:
+        #     cv2.rectangle(show_img, (int(label[0] * w), int(label[1] * h)),
+        #                   (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
+        # cv2.imshow('old_image', show_img)
+
+        if self.transform is not None:
+            target = np.array(new_labels)
+            img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+
+            # to rgb
+            img = img[:, :, (2, 1, 0)]
+            # img = img.transpose(2, 0, 1)
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+
+            # print('target_2', target)
+            # h, w, c = img.shape
+            # show_img = img.copy()
+            # for label in target:
+            #     cv2.rectangle(show_img, (int(label[0] * w), int(label[1] * h)),
+            #                   (int(label[2] * w), int(label[3] * h)), (0, 255, 0))
+            # cv2.imshow('new_image', show_img)
+            # cv2.waitKey()
+
+            # TODO
+            # return torch.from_numpy(img).permute(2, 0, 1), target
+            return transforms.ToTensor()(img), target, height, width
+
     def __len__(self):
         return len(self.img_files)
 

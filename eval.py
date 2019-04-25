@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from data import VOC_ROOT, VOCAnnotationTransform, VOCDetection, BaseTransform
 from data import VOC_CLASSES as labelmap
 import torch.utils.data as data
+from utils.transform import TestformTest
 from data.datasets import SSDDataset
 
 from ssd import build_ssd
@@ -23,6 +24,28 @@ import argparse
 import numpy as np
 import pickle
 import cv2
+
+
+def detection_collate(batch):
+    """Custom collate fn for dealing with batches of images that have a different
+    number of associated object annotations (bounding boxes).
+
+    Arguments:
+        batch: (tuple) A tuple of tensor images and lists of annotations
+
+    Return:
+        A tuple containing:
+            1) (tensor) batch of images stacked on their 0 dim
+            2) (list of tensors) annotations for a given image are stacked on
+                                 0 dim
+    """
+    targets = []
+    imgs = []
+    for sample in batch:
+        imgs.append(sample[0])
+        targets.append(torch.FloatTensor(sample[1]))
+    return torch.stack(imgs, 0), targets
+
 
 if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
@@ -48,6 +71,7 @@ parser.add_argument('--voc_root', default=VOC_ROOT,
                     help='Location of VOC root directory')
 parser.add_argument('--cleanup', default=True, type=str2bool,
                     help='Cleanup and remove results files following eval')
+parser.add_argument('--dataset_root', default='/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/', help='')
 
 args = parser.parse_args()
 
@@ -397,8 +421,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             boxes[:, 3] *= h
             scores = dets[:, 0].cpu().numpy()
             cls_dets = np.hstack((boxes.cpu().numpy(),
-                                  scores[:, np.newaxis])).astype(np.float32,
-                                                                 copy=False)
+                                  scores[:, np.newaxis])).astype(np.float32, copy=False)
             all_boxes[j][i] = cls_dets
 
         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
@@ -409,6 +432,96 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
     print('Evaluating detections')
     evaluate_detections(all_boxes, output_dir, dataset)
+# def test_net(save_folder, net, cuda, dataset, transform, top_k,
+#              im_size=300, thresh=0.05):
+#
+#     data_loader = data.DataLoader(dataset, batch_size=8, num_workers=1, collate_fn=detection_collate, pin_memory=True)
+#
+#     for batch_i, (images, targets) in enumerate(data_loader):
+#         if args.cuda:
+#             images = Variable(images.cuda())
+#             targets = [Variable(ann.cuda()) for ann in targets]
+#         else:
+#             images = Variable(images)
+#             targets = [Variable(ann) for ann in targets]
+#
+#         detections = net(images).data
+#         print('detections', detections.size())
+#
+#         for j in range(1, detections.size(1)):
+#             dets = detections[0, j, :]
+#             mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+#             dets = torch.masked_select(dets, mask).view(-1, 5)
+#             if dets.size(0) == 0:
+#                 continue
+#             boxes = dets[:, 1:]
+#             boxes[:, 0] *= w
+#             boxes[:, 2] *= w
+#             boxes[:, 1] *= h
+#             boxes[:, 3] *= h
+#             scores = dets[:, 0].cpu().numpy()
+#             cls_dets = np.hstack((boxes.cpu().numpy(),
+#                                   scores[:, np.newaxis])).astype(np.float32,
+#                                                                  copy=False)
+#             all_boxes[j][i] = cls_dets
+#
+#         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
+#                                                     num_images, detect_time))
+#
+#     with open(det_file, 'wb') as f:
+#         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
+#
+#     print('Evaluating detections')
+#     evaluate_detections(all_boxes, output_dir, dataset)
+#
+#     num_images = len(dataset)
+#     # all detections are collected into:
+#     #    all_boxes[cls][image] = N x 5 array of detections in
+#     #    (x1, y1, x2, y2, score)
+#     all_boxes = [[[] for _ in range(num_images)]
+#                  for _ in range(len(labelmap)+1)]
+#
+#     # timers
+#     _t = {'im_detect': Timer(), 'misc': Timer()}
+#     output_dir = get_output_dir('ssd300_120000', set_type)
+#     det_file = os.path.join(output_dir, 'detections.pkl')
+#
+#     for i in range(num_images):
+#         im, gt, h, w = dataset.pull_item(i)
+#
+#         x = Variable(im.unsqueeze(0))
+#         if args.cuda:
+#             x = x.cuda()
+#         _t['im_detect'].tic()
+#         detections = net(x).data
+#         detect_time = _t['im_detect'].toc(average=False)
+#
+#         # skip j = 0, because it's the background class
+#         for j in range(1, detections.size(1)):
+#             dets = detections[0, j, :]
+#             mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+#             dets = torch.masked_select(dets, mask).view(-1, 5)
+#             if dets.size(0) == 0:
+#                 continue
+#             boxes = dets[:, 1:]
+#             boxes[:, 0] *= w
+#             boxes[:, 2] *= w
+#             boxes[:, 1] *= h
+#             boxes[:, 3] *= h
+#             scores = dets[:, 0].cpu().numpy()
+#             cls_dets = np.hstack((boxes.cpu().numpy(),
+#                                   scores[:, np.newaxis])).astype(np.float32,
+#                                                                  copy=False)
+#             all_boxes[j][i] = cls_dets
+#
+#         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
+#                                                     num_images, detect_time))
+#
+#     with open(det_file, 'wb') as f:
+#         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
+#
+#     print('Evaluating detections')
+#     evaluate_detections(all_boxes, output_dir, dataset)
 
 
 def evaluate_detections(box_list, output_dir, dataset):
@@ -431,7 +544,7 @@ if __name__ == '__main__':
                               image_file='image_path.txt',
                               img_size=300,
                               train=False,
-                              transform=TransformTest(300, MEANS))
+                              transform=TestformTest(300))
 
     if args.cuda:
         net = net.cuda()
