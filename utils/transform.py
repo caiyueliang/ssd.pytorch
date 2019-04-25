@@ -398,7 +398,7 @@ class PhotometricDistort(object):
         return self.rand_light_noise(im, boxes, labels)
 
 
-class TransformTrain(object):
+class TrainformTrain(object):
     def __init__(self, size=300, mean=(104, 117, 123)):
         self.mean = mean
         self.size = size
@@ -419,7 +419,7 @@ class TransformTrain(object):
         return self.augment(img, boxes, labels)
 
 
-class TransformTest(object):
+class TestformTest(object):
     def __init__(self, size=300, mean=(104, 117, 123)):
         self.mean = mean
         self.size = size

@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from data import VOC_ROOT, VOCAnnotationTransform, VOCDetection, BaseTransform
 from data import VOC_CLASSES as labelmap
 import torch.utils.data as data
+from data.datasets import SSDDataset
 
 from ssd import build_ssd
 
@@ -35,11 +36,8 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Evaluation')
-parser.add_argument('--trained_model',
-                    default='weights/ssd300_mAP_77.43_v2.pth', type=str,
-                    help='Trained state_dict file path to open')
-parser.add_argument('--save_folder', default='eval/', type=str,
-                    help='File path to save results')
+parser.add_argument('--trained_model', default='weights/things_0425_2.2590.pth', type=str, help='')
+parser.add_argument('--save_folder', default='eval/', type=str, help='')
 parser.add_argument('--confidence_threshold', default=0.01, type=float,
                     help='Detection confidence threshold')
 parser.add_argument('--top_k', default=5, type=int,
@@ -426,9 +424,15 @@ if __name__ == '__main__':
     net.eval()
     print('Finished loading model!')
     # load data
-    dataset = VOCDetection(args.voc_root, [('2007', set_type)],
-                           BaseTransform(300, dataset_mean),
-                           VOCAnnotationTransform())
+    # dataset = VOCDetection(args.voc_root, [('2007', set_type)],
+    #                        BaseTransform(300, dataset_mean),
+    #                        VOCAnnotationTransform())
+    dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
+                              image_file='image_path.txt',
+                              img_size=300,
+                              train=False,
+                              transform=TransformTest(300, MEANS))
+
     if args.cuda:
         net = net.cuda()
         cudnn.benchmark = True

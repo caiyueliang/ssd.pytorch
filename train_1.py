@@ -1,6 +1,6 @@
 # encoding:utf-8
 from data import *
-from utils.transform import TransformTrain, TransformTest
+from utils.transform import TrainformTrain, TestformTest
 from layers.modules import MultiBoxLoss
 from ssd import build_ssd
 import os
@@ -72,14 +72,14 @@ def train():
                   "--dataset_root was not specified.")
             args.dataset_root = COCO_ROOT
         cfg = coco
-        dataset = COCODetection(root=args.dataset_root, transform=TransformTrain(cfg['min_dim'], MEANS))
+        dataset = COCODetection(root=args.dataset_root, transform=TrainformTrain(cfg['min_dim'], MEANS))
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
 
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
-        dataset = VOCDetection(root=args.dataset_root, transform=TransformTrain(cfg['min_dim'], MEANS))
+        dataset = VOCDetection(root=args.dataset_root, transform=TrainformTrain(cfg['min_dim'], MEANS))
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
 
     else:
@@ -90,12 +90,12 @@ def train():
                              image_file='image_path.txt',
                              img_size=cfg['min_dim'],
                              train=True,
-                             transform=TransformTrain(cfg['min_dim'], MEANS))
+                             transform=TrainformTrain(cfg['min_dim'], MEANS))
         test_dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'test'),
                                   image_file='image_path.txt',
                                   img_size=cfg['min_dim'],
                                   train=False,
-                                  transform=TransformTest(cfg['min_dim'], MEANS))
+                                  transform=TestformTest(cfg['min_dim'], MEANS))
         # cfg['num_classes'] = args.class_num
         ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
         print('cfg', cfg)
