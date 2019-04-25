@@ -38,8 +38,8 @@ parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value 
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 
-parser.add_argument('--total_epochs', default=200, type=int, help='total_epochs')
-parser.add_argument('--decay_epoch', default=60, type=int, help='decay_epoch')
+parser.add_argument('--total_epochs', default=100, type=int, help='total_epochs')
+parser.add_argument('--decay_epoch', default=40, type=int, help='decay_epoch')
 parser.add_argument('--min_loss', default=5, type=float, help='min_loss')
 parser.add_argument('--class_num', default=15, type=int, help='class_num')
 parser.add_argument('--retrain', default=False, type=str2bool, help='retrain')
