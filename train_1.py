@@ -37,12 +37,14 @@ parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='i
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
-parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
 
 parser.add_argument('--total_epochs', default=200, type=int, help='total_epochs')
 parser.add_argument('--decay_epoch', default=60, type=int, help='decay_epoch')
 parser.add_argument('--min_loss', default=5, type=float, help='min_loss')
 parser.add_argument('--class_num', default=15, type=int, help='class_num')
+parser.add_argument('--retrain', default=False, type=str2bool, help='retrain')
+parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
+parser.add_argument("--checkpoint_name", default="things_ssd.pth", type=str, help="")
 
 args = parser.parse_args()
 
@@ -100,6 +102,11 @@ def train():
 
     net = ssd_net
 
+    file_name = os.path.join(args.save_folder, args.checkpoint_name)
+    if os.path.exists(file_name) and not args.retrain:
+        print('[load model] %s ...' % file_name)
+        net.load_state_dict(torch.load(file_name))
+
     if args.cuda:
         net = torch.nn.DataParallel(ssd_net)
         cudnn.benchmark = True
@@ -129,7 +136,6 @@ def train():
 
     print('Loading the dataset...')
     print('Training SSD on:', dataset.name)
-    print('Using the specified args:')
     print(args)
 
     # TODO
@@ -193,7 +199,7 @@ def train():
         if test_loss < min_loss:
             min_loss = test_loss
             print('save best model')
-            torch.save(ssd_net.state_dict(), args.save_folder + '' + args.dataset + '.pth')
+            torch.save(ssd_net.state_dict(), os.path.join(args.save_folder, args.checkpoint_name))
 
 
 def test(model, criterion, test_data_loader):
