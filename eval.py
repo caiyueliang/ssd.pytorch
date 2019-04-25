@@ -446,6 +446,7 @@ things_label = ['chef hat', 'safe hat', 'chef cloth', 'mask', 'fan', 'TV', 'frid
 
 
 def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thresh=0.05):
+    start = time.time()
     num_images = len(dataset)
 
     for i in range(num_images):
@@ -458,31 +459,9 @@ def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=3
 
         detections = net(x).data
 
-        # save_image(img_path, detections, w, h, save_folder)
-        save_detect_file(img_path, detections, w, h, save_folder)
-        # for j in range(1, detections.size(1)):
-        #     dets = detections[0, j, :]
-        #
-        #     mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
-        #     dets = torch.masked_select(dets, mask).view(-1, 5)
-        #     if dets.size(0) == 0:
-        #         continue
-        #     boxes = dets[:, 1:]
-        #     boxes[:, 0] *= w
-        #     boxes[:, 2] *= w
-        #     boxes[:, 1] *= h
-        #     boxes[:, 3] *= h
-        #
-        #     for label in boxes:
-        #         cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[2]), int(label[3])), (0, 0, 255))
-        #         cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[0] + 115), int(label[1] + 16)), (0, 0, 255), -1, cv2.LINE_AA)
-        #         img = Image.fromarray(show_img)
-        #         draw = ImageDraw.Draw(img)
-        #         draw.text((int(label[0] + 1), int(label[1])), things_label[j - 1], (255, 255, 255))
-        #         show_img = np.array(img)
-        #
-        # cv2.imshow('new_image', show_img)
-        # cv2.waitKey()
+        save_image(img_path, detections, w, h, save_folder)
+        # save_detect_file(img_path, detections, w, h, save_folder)
+    print('time', time.time() - start)
 
 
 def mkdir_if_not_exist(path):
