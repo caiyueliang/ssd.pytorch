@@ -1,3 +1,4 @@
+# encoding:utf-8
 """Adapted from:
     @longcw faster_rcnn_pytorch: https://github.com/longcw/faster_rcnn_pytorch
     @rbgirshick py-faster-rcnn https://github.com/rbgirshick/py-faster-rcnn
@@ -392,16 +393,6 @@ things_label = ['chef hat', 'safe hat', 'chef cloth', 'mask', 'fan', 'TV', 'frid
 
 def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thresh=0.05):
     num_images = len(dataset)
-    # all detections are collected into:
-    #    all_boxes[cls][image] = N x 5 array of detections in
-    #    (x1, y1, x2, y2, score)
-    # all_boxes = [[[] for _ in range(num_images)] for _ in range(len(labelmap)+1)]
-    all_boxes = [[[] for _ in range(len(labelmap) + 1)] for _ in range(num_images)]
-
-    # timers
-    _t = {'im_detect': Timer(), 'misc': Timer()}
-    output_dir = get_output_dir('ssd300_120000', set_type)
-    det_file = os.path.join(output_dir, 'detections.pkl')
 
     for i in range(num_images):
         im, gt, h, w, img_path = dataset.pull_item(i)
@@ -410,52 +401,34 @@ def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=3
 
         if args.cuda:
             x = x.cuda()
-        _t['im_detect'].tic()
+
         detections = net(x).data
-        print('detections', detections.size())
-        detect_time = _t['im_detect'].toc(average=False)
 
-        show_img = cv2.imread(img_path)
+        save_image(img_path, detections, w, h, save_folder)
 
-        for j in range(1, detections.size(1)):
-            dets = detections[0, j, :]
-            # print('dets', dets.size())
-            mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
-            dets = torch.masked_select(dets, mask).view(-1, 5)
-            if dets.size(0) == 0:
-                continue
-            boxes = dets[:, 1:]
-            boxes[:, 0] *= w
-            boxes[:, 2] *= w
-            boxes[:, 1] *= h
-            boxes[:, 3] *= h
-            print('j, boxes', j, boxes)
-            scores = dets[:, 0].cpu().numpy()
-            cls_dets = np.hstack((boxes.cpu().numpy(),
-                                  scores[:, np.newaxis])).astype(np.float32, copy=False)
-            all_boxes[i][j] = cls_dets
-
-            for label in boxes:
-                cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[2]), int(label[3])), (0, 0, 255))
-                cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[0] + 115), int(label[1] + 16)), (0, 0, 255), -1, cv2.LINE_AA)
-                img = Image.fromarray(show_img)
-                draw = ImageDraw.Draw(img)
-                draw.text((int(label[0] + 1), int(label[1])), things_label[j - 1], (255, 255, 255))
-                show_img = np.array(img)
-
-        cv2.imshow('new_image', show_img)
-        cv2.waitKey()
-
-        # print('all_boxes', all_boxes)
-        print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1, num_images, detect_time))
-
-    # for i in range(num_images):
-
-    with open(det_file, 'wb') as f:
-        pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
-
-    print('Evaluating detections')
-    evaluate_detections(all_boxes, output_dir, dataset)
+        # for j in range(1, detections.size(1)):
+        #     dets = detections[0, j, :]
+        #
+        #     mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+        #     dets = torch.masked_select(dets, mask).view(-1, 5)
+        #     if dets.size(0) == 0:
+        #         continue
+        #     boxes = dets[:, 1:]
+        #     boxes[:, 0] *= w
+        #     boxes[:, 2] *= w
+        #     boxes[:, 1] *= h
+        #     boxes[:, 3] *= h
+        #
+        #     for label in boxes:
+        #         cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[2]), int(label[3])), (0, 0, 255))
+        #         cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[0] + 115), int(label[1] + 16)), (0, 0, 255), -1, cv2.LINE_AA)
+        #         img = Image.fromarray(show_img)
+        #         draw = ImageDraw.Draw(img)
+        #         draw.text((int(label[0] + 1), int(label[1])), things_label[j - 1], (255, 255, 255))
+        #         show_img = np.array(img)
+        #
+        # cv2.imshow('new_image', show_img)
+        # cv2.waitKey()
 
 
 def test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=300, thresh=0.05):
@@ -517,74 +490,34 @@ def mkdir_if_not_exist(path):
         os.makedirs(os.path.join(path))
 
 
-# def save_images(imgs_paths, img_detections, classes):
-#     print('[saving images] start ...')
-#     print('total images len: %d' % len(imgs_paths))
-#
-#     cmap = plt.get_cmap('tab20b')
-#     colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-#
-#     # Iterate through images and save plot of detections
-#     for img_i, (path, detections) in enumerate(zip(imgs_paths, img_detections)):
-#
-#         print("(%d) Image: '%s'" % (img_i, path))
-#
-#         # Create plot
-#         img = np.array(Image.open(path))
-#         img = resize(img, (416, 416, 3), mode='reflect')
-#         # print('img shape', img.shape)
-#         plt.figure()
-#         fig, ax = plt.subplots(1)
-#         ax.imshow(img)
-#
-#         # # The amount of padding that was added
-#         # pad_x = max(img.shape[0] - img.shape[1], 0) * (opt.img_size / max(img.shape))
-#         # pad_y = max(img.shape[1] - img.shape[0], 0) * (opt.img_size / max(img.shape))
-#         # # Image height and width after padding is removed
-#         # unpad_h = opt.img_size - pad_y
-#         # unpad_w = opt.img_size - pad_x
-#         # print('unpad_h', unpad_h)
-#         # print('unpad_w', unpad_w)
-#
-#         # Draw bounding boxes and labels of detections
-#         if detections is not None:
-#             unique_labels = detections[:, -1].cpu().unique()
-#             n_cls_preds = len(unique_labels)
-#             bbox_colors = random.sample(colors, n_cls_preds)
-#             for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-#                 # if cls_conf.item() >= opt.conf_thres:
-#                     # print(x1.item(), y1.item(), x2.item(), y2.item(), conf.item(), cls_conf.item(), cls_pred.item())
-#                     print('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))
-#                     x1 = x1 if x1 >= 0 else 0
-#                     y1 = y1 if y1 >= 0 else 0
-#
-#                     # Rescale coordinates to original dimensions
-#                     box_h = (y2 - y1)
-#                     box_w = (x2 - x1)
-#                     # y1 = (y1 - pad_y // 2)
-#                     # x1 = (x1 - pad_x // 2)
-#                     # box_h = ((y2 - y1) / unpad_h) * img.shape[0]
-#                     # box_w = ((x2 - x1) / unpad_w) * img.shape[1]
-#                     # y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
-#                     # x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-#
-#                     color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-#                     # Create a Rectangle patch
-#                     bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2,
-#                                              edgecolor=color,
-#                                              facecolor='none')
-#                     # Add the bbox to the plot
-#                     ax.add_patch(bbox)
-#                     # Add label
-#                     plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-#                              bbox={'color': color, 'pad': 0})
-#
-#         # Save generated image with detections
-#         plt.axis('off')
-#         plt.gca().xaxis.set_major_locator(NullLocator())
-#         plt.gca().yaxis.set_major_locator(NullLocator())
-#         plt.savefig('output/%d.jpg' % (img_i), bbox_inches='tight', pad_inches=0.0)
-#         plt.close()
+def save_image(img_path, detections, w, h, save_folder):
+    print('img_path', img_path)
+    show_img = cv2.imread(img_path)
+
+    for j in range(1, detections.size(1)):
+        dets = detections[0, j, :]
+
+        mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+        dets = torch.masked_select(dets, mask).view(-1, 5)
+        if dets.size(0) == 0:
+            continue
+        boxes = dets[:, 1:]
+        boxes[:, 0] *= w
+        boxes[:, 2] *= w
+        boxes[:, 1] *= h
+        boxes[:, 3] *= h
+
+        for label in boxes:
+            cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[2]), int(label[3])), (0, 0, 255))
+            cv2.rectangle(show_img, (int(label[0]), int(label[1])), (int(label[0] + 115), int(label[1] + 16)), (0, 0, 255), -1, cv2.LINE_AA)
+            img = Image.fromarray(show_img)
+            draw = ImageDraw.Draw(img)
+            draw.text((int(label[0] + 1), int(label[1])), things_label[j - 1], (255, 255, 255))
+            show_img = np.array(img)
+
+    # cv2.imshow('new_image', show_img)
+    # cv2.waitKey()
+    cv2.imwrite(os.path.join(save_folder, img_path.split('/')[-1]), show_img)
 
 
 def save_detect_file(imgs_paths, img_detections, save_name):
