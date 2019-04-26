@@ -75,7 +75,7 @@ parser.add_argument('--voc_root', default=VOC_ROOT,
                     help='Location of VOC root directory')
 parser.add_argument('--cleanup', default=True, type=str2bool,
                     help='Cleanup and remove results files following eval')
-parser.add_argument('--dataset_root', default='/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/', help='')
+parser.add_argument('--dataset_root', default='/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/test', help='')
 
 args = parser.parse_args()
 
@@ -459,8 +459,10 @@ def things_test_net(save_folder, net, cuda, dataset, transform, top_k, im_size=3
 
         detections = net(x).data
 
-        save_image(img_path, detections, w, h, save_folder)
+        # save_image(img_path, detections, w, h, save_folder)
         # save_detect_file(img_path, detections, w, h, save_folder)
+        save_label_file(img_path, detections)
+
     print('time', time.time() - start)
 
 
@@ -524,6 +526,34 @@ def save_detect_file(imgs_path, detections, w, h, save_folder, save_name="result
             save_txt += "\n"
 
             file.write(save_txt)
+
+
+def save_label_file(imgs_path, detections):
+    print(imgs_path)
+    label_path = imgs_path.replace('.jpg', '.txt').replace('.jpeg', '.txt').replace('.png', '.txt')
+    print(label_path)
+
+    with open(label_path, "w") as file:
+        # Iterate through images and save plot of detections
+        save_txt = ""
+        for j in range(1, detections.size(1)):
+            dets = detections[0, j, :]
+
+            mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+            dets = torch.masked_select(dets, mask).view(-1, 5)
+            if dets.size(0) == 0:
+                continue
+            boxes = dets[:, 1:]
+            x_c = (boxes[:, 2] + boxes[:, 0]) / 2
+            y_c = (boxes[:, 3] + boxes[:, 1]) / 2
+            w = boxes[:, 2] - boxes[:, 0]
+            h = boxes[:, 3] - boxes[:, 1]
+
+            for i, x in enumerate(x_c):
+                save_txt += "{} {} {} {} {}\n".format(j - 1, x, y_c[i], w[i], h[i])
+
+        file.write(save_txt)
+
 
 # def test_net(save_folder, net, cuda, dataset, transform, top_k,
 #              im_size=300, thresh=0.05):
@@ -638,7 +668,7 @@ if __name__ == '__main__':
     #                      img_size=300,
     #                      train=False,
     #                      transform=TestformTest(300))
-    dataset = ImageFolder(folder_path=os.path.join(args.dataset_root, 'test'),
+    dataset = ImageFolder(folder_path=args.dataset_root,
                           img_size=300,
                           transform=TestformTest(300))
 
