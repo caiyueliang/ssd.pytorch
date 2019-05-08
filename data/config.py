@@ -40,3 +40,18 @@ coco = {
     'clip': True,
     'name': 'COCO',
 }
+
+things = {
+    'num_classes': 15,
+    'lr_steps': (280000, 360000, 400000),
+    'max_iter': 500000,
+    'feature_maps': [38, 19, 10, 5, 3, 1],
+    'min_dim': 300,
+    'steps': [8, 16, 32, 64, 100, 300],
+    'min_sizes': [30, 60, 111, 162, 213, 264],
+    'max_sizes': [60, 111, 162, 213, 264, 315],
+    'aspect_ratios': [[2], [2, 3], [2, 3], [2, 3], [2], [2]],
+    'variance': [0.1, 0.2],
+    'clip': True,
+    'name': 'things',
+}

@@ -1,3 +1,5 @@
 python train.py --dataset "things" --dataset_root '/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/'
 
 python eval.py --dataset_root /home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images
+
+python train_1.py --dataset "things" --dataset_root '/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/'
