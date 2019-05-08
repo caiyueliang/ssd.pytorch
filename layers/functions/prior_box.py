@@ -12,7 +12,7 @@ class PriorBox(object):
         super(PriorBox, self).__init__()
         self.image_size = cfg['min_dim']
         # number of priors for feature map location (either 4 or 6)
-        self.num_priors = len(cfg['aspect_ratios'])         # 先验框个数，4或6个。配置文件为6个
+        self.num_priors = len(cfg['aspect_ratios'])         # 先验框个数，4或6个（不同层不一样）。(这边没用到？)
         self.variance = cfg['variance'] or [0.1]
         self.feature_maps = cfg['feature_maps']             # 特征层的size长度，分别是[38, 19, 10, 5, 3, 1]
         self.min_sizes = cfg['min_sizes']
@@ -36,18 +36,19 @@ class PriorBox(object):
 
                 # aspect_ratio: 1
                 # rel size: min_size
-                s_k = self.min_sizes[k]/self.image_size
+                s_k = self.min_sizes[k]/self.image_size                         # 小正方形先验框
                 mean += [cx, cy, s_k, s_k]
 
                 # aspect_ratio: 1
                 # rel size: sqrt(s_k * s_(k+1))
-                s_k_prime = sqrt(s_k * (self.max_sizes[k]/self.image_size))
+                s_k_prime = sqrt(s_k * (self.max_sizes[k]/self.image_size))     # 大正方形先验框
                 mean += [cx, cy, s_k_prime, s_k_prime]
 
                 # rest of aspect ratios
-                for ar in self.aspect_ratios[k]:
-                    mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]
-                    mean += [cx, cy, s_k/sqrt(ar), s_k*sqrt(ar)]
+                # 'aspect_ratios': [[2], [2, 3], [2, 3], [2, 3], [2], [2]]
+                for ar in self.aspect_ratios[k]:                                # 其他比例先验框 [2]表示补充：2和1/2的;
+                    mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]                # [2, 3]表示补充：2, 1/2, 3和1/3的;
+                    mean += [cx, cy, s_k/sqrt(ar), s_k*sqrt(ar)]                # 所以可能有4或6个
         # back to torch land
         output = torch.Tensor(mean).view(-1, 4)
         if self.clip:
