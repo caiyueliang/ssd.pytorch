@@ -11,7 +11,6 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
-import torch.nn.init as init
 import torch.utils.data as data
 import numpy as np
 import argparse
@@ -251,7 +250,8 @@ def adjust_learning_rate(optimizer, gamma, step):
 
 
 def xavier(param):
-    init.xavier_uniform(param)
+    # nn.init.xavier_uniform(param)
+    nn.init.xavier_uniform_(param)
 
 
 def weights_init(m):
