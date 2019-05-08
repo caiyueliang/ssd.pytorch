@@ -183,10 +183,50 @@ def multibox(vgg, extra_layers, cfg, num_classes):
     print('[multibox] cfg', cfg)
     loc_layers = []
     conf_layers = []
-    vgg_source = [21, -2]
+    vgg_source = [21, -2]       # 取VGG的第21层和倒数第2层的网络
 
+    # print('[multibox] vgg', vgg)
+    # vgg[
+    #     Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+    #     Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+    #     Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=True),
+    #     Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),          # 第21层
+    #     ReLU(inplace),
+    #     MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+    #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+    #     ReLU(inplace),
+    #     MaxPool2d(kernel_size=3, stride=1, padding=1, dilation=1, ceil_mode=False),
+    #     Conv2d(512, 1024, kernel_size=(3, 3), stride=(1, 1), padding=(6, 6), dilation=(6, 6)),
+    #     ReLU(inplace),
+    #     Conv2d(1024, 1024, kernel_size=(1, 1), stride=(1, 1)),                        # 倒数第2层
+    #     ReLU(inplace)
+    # ]
+
+    # 取VGG的第21层和倒数第2层的网络
     for k, v in enumerate(vgg_source):
-        print('[multibox] vgg_source v', v)
+        print('[multibox] vgg_source v', v, vgg[v].out_channels)
         loc_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * num_classes, kernel_size=3, padding=1)]
 
