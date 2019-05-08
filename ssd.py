@@ -180,15 +180,18 @@ def add_extras(cfg, channels, batch_norm=False):
 
 
 def multibox(vgg, extra_layers, cfg, num_classes):
+    print('[multibox] cfg', cfg)
     loc_layers = []
     conf_layers = []
     vgg_source = [21, -2]
 
     for k, v in enumerate(vgg_source):
+        print('[multibox] vgg_source v', v)
         loc_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * num_classes, kernel_size=3, padding=1)]
 
     for k, v in enumerate(extra_layers[1::2], 2):
+        print('[multibox] extra_layers v', v)
         loc_layers += [nn.Conv2d(v.out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(v.out_channels, cfg[k] * num_classes, kernel_size=3, padding=1)]
 
