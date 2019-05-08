@@ -72,14 +72,14 @@ def train():
             args.dataset_root = COCO_ROOT
         cfg = coco
         dataset = COCODetection(root=args.dataset_root, transform=TrainformTrain(cfg['min_dim'], MEANS))
-        ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
+        ssd_net = build_ssd(phase='train', size=cfg['min_dim'], num_classes=cfg['num_classes'], cfg=cfg)
 
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = VOCDetection(root=args.dataset_root, transform=TrainformTrain(cfg['min_dim'], MEANS))
-        ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
+        ssd_net = build_ssd(phase='train', size=cfg['min_dim'], num_classes=cfg['num_classes'], cfg=cfg)
 
     else:
         if args.dataset_root == COCO_ROOT:
@@ -98,7 +98,7 @@ def train():
                                   img_size=cfg['min_dim'],
                                   train=False,
                                   transform=TestformTest(cfg['min_dim'], MEANS))
-        ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
+        ssd_net = build_ssd(phase='train', size=cfg['min_dim'], num_classes=cfg['num_classes'], cfg=cfg)
 
     net = ssd_net
 

@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from layers import *
-from data import voc, coco
 import os
 
 
@@ -25,15 +24,15 @@ class SSD(nn.Module):
         head: "multibox head" consists of loc and conf conv layers
     """
 
-    def __init__(self, phase, size, base, extras, head, num_classes, top_k=50, conf_thresh=0.7, nms_thresh=0.5):
+    def __init__(self, phase, size, base, extras, head, num_classes, cfg, top_k=50, conf_thresh=0.7, nms_thresh=0.5):
         super(SSD, self).__init__()
         self.phase = phase
         self.num_classes = num_classes
-        self.cfg = (coco, voc)[num_classes == 21]
+        # self.cfg = (coco, voc)[num_classes == 21]
+        self.cfg = cfg
         print('SSD self.cfg', self.cfg)
-        
+
         self.priorbox = PriorBox(self.cfg)
-        # self.priors = Variable(self.priorbox.forward(), volatile=True)
         self.priors = Variable(self.priorbox.forward())
         self.size = size
 
@@ -272,7 +271,7 @@ mbox = {
 }
 
 
-def build_ssd(phase, size=300, num_classes=21, top_k=50, conf_thresh=0.7, nms_thresh=0.5):
+def build_ssd(phase, size, num_classes, cfg, top_k=50, conf_thresh=0.7, nms_thresh=0.5):
     if phase != "test" and phase != "train":
         print("ERROR: Phase: " + phase + " not recognized")
         return
@@ -286,4 +285,4 @@ def build_ssd(phase, size=300, num_classes=21, top_k=50, conf_thresh=0.7, nms_th
                                      extra_layers=add_extras(cfg=extras[str(size)], channels=1024),
                                      cfg=mbox[str(size)],
                                      num_classes=num_classes)
-    return SSD(phase, size, base_, extras_, head_, num_classes, top_k, conf_thresh, nms_thresh)
+    return SSD(phase, size, base_, extras_, head_, num_classes, cfg, top_k, conf_thresh, nms_thresh)
