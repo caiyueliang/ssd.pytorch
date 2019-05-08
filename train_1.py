@@ -32,7 +32,7 @@ parser.add_argument('--resume', default=None, type=str, help='Checkpoint state_d
 parser.add_argument('--start_iter', default=0, type=int, help='Resume training at this iter')
 parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use CUDA to train model')
-parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
@@ -260,35 +260,35 @@ def weights_init(m):
         m.bias.data.zero_()
 
 
-def create_vis_plot(_xlabel, _ylabel, _title, _legend):
-    return viz.line(
-        X=torch.zeros((1,)).cpu(),
-        Y=torch.zeros((1, 3)).cpu(),
-        opts=dict(
-            xlabel=_xlabel,
-            ylabel=_ylabel,
-            title=_title,
-            legend=_legend
-        )
-    )
-
-
-def update_vis_plot(iteration, loc, conf, window1, window2, update_type,
-                    epoch_size=1):
-    viz.line(
-        X=torch.ones((1, 3)).cpu() * iteration,
-        Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu() / epoch_size,
-        win=window1,
-        update=update_type
-    )
-    # initialize epoch plot on first iteration
-    if iteration == 0:
-        viz.line(
-            X=torch.zeros((1, 3)).cpu(),
-            Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu(),
-            win=window2,
-            update=True
-        )
+# def create_vis_plot(_xlabel, _ylabel, _title, _legend):
+#     return viz.line(
+#         X=torch.zeros((1,)).cpu(),
+#         Y=torch.zeros((1, 3)).cpu(),
+#         opts=dict(
+#             xlabel=_xlabel,
+#             ylabel=_ylabel,
+#             title=_title,
+#             legend=_legend
+#         )
+#     )
+#
+#
+# def update_vis_plot(iteration, loc, conf, window1, window2, update_type,
+#                     epoch_size=1):
+#     viz.line(
+#         X=torch.ones((1, 3)).cpu() * iteration,
+#         Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu() / epoch_size,
+#         win=window1,
+#         update=update_type
+#     )
+#     # initialize epoch plot on first iteration
+#     if iteration == 0:
+#         viz.line(
+#             X=torch.zeros((1, 3)).cpu(),
+#             Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu(),
+#             win=window2,
+#             update=True
+#         )
 
 
 if __name__ == '__main__':
