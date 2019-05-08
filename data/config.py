@@ -12,7 +12,7 @@ MEANS = (104, 117, 123)
 
 # SSD300 CONFIGS
 voc = {
-    'num_classes': 21,
+    'num_classes': 21,                          # 20 + 1 = 21
     'lr_steps': (80000, 100000, 120000),
     'max_iter': 120000,
     'feature_maps': [38, 19, 10, 5, 3, 1],
@@ -27,7 +27,7 @@ voc = {
 }
 
 coco = {
-    'num_classes': 201,
+    'num_classes': 201,                         # 200 + 1 = 201
     'lr_steps': (280000, 360000, 400000),
     'max_iter': 400000,
     'feature_maps': [38, 19, 10, 5, 3, 1],
@@ -42,7 +42,7 @@ coco = {
 }
 
 things = {
-    'num_classes': 15,
+    'num_classes': 16,                          # 15 + 1 = 16
     'lr_steps': (280000, 360000, 400000),
     'max_iter': 500000,
     'feature_maps': [38, 19, 10, 5, 3, 1],

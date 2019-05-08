@@ -85,8 +85,8 @@ def train():
     else:
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
-        # cfg = things
-        cfg = voc
+        cfg = things
+        # cfg = voc
         print('[train] cfg', cfg)
 
         dataset = SSDDataset(root_path=os.path.join(args.dataset_root, 'train'),
