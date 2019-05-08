@@ -230,6 +230,21 @@ def multibox(vgg, extra_layers, cfg, num_classes):
         loc_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * num_classes, kernel_size=3, padding=1)]
 
+    # print('[multibox] extra_layers', extra_layers)
+    # extra_layers[
+    #     Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1)),
+    #     Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)),
+    #     Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1)),
+    #     Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)),
+    #     Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1)),
+    #     Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1)),
+    #     Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1)),
+    #     Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
+    # ]
+    # [multibox] extra_layers v Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    # [multibox] extra_layers v Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    # [multibox] extra_layers v Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
+    # [multibox] extra_layers v Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
     for k, v in enumerate(extra_layers[1::2], 2):
         print('[multibox] extra_layers v', v)
         loc_layers += [nn.Conv2d(v.out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
