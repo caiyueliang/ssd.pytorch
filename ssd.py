@@ -211,7 +211,7 @@ def multibox(vgg, extra_layers, cfg, num_classes):
     #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
     #     ReLU(inplace),
     #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),          # 第21层
-    #     ReLU(inplace),
+    #     ReLU(inplace),                                                                # 第22层
     #     MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
     #     Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
     #     ReLU(inplace),
