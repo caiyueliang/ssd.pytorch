@@ -58,6 +58,11 @@ class MultiBoxLoss(nn.Module):
                 shape: [batch_size,num_objs,5] (last idx is the label).
         """
         loc_data, conf_data, priors = predictions
+        # print('loc_data', loc_data.size())
+        # print('conf_data', conf_data.size())
+        # print('priors', priors.size())
+        # print('targets', targets)
+
         num = loc_data.size(0)
         priors = priors[:loc_data.size(1), :]
         num_priors = (priors.size(0))
