@@ -228,7 +228,7 @@ def multibox(vgg, extra_layers, cfg, num_classes):
 
     # 取VGG的第21层和倒数第2层的网络
     for k, v in enumerate(vgg_source):
-        print('[multibox] vgg_source v', v, vgg[v].out_channels)
+        # print('[multibox] vgg_source v', v, vgg[v].out_channels)
         loc_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(vgg[v].out_channels, cfg[k] * num_classes, kernel_size=3, padding=1)]
 
@@ -248,7 +248,7 @@ def multibox(vgg, extra_layers, cfg, num_classes):
     # [multibox] extra_layers v Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
     # [multibox] extra_layers v Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
     for k, v in enumerate(extra_layers[1::2], 2):
-        print('[multibox] extra_layers v', v)
+        # print('[multibox] extra_layers v', v)
         loc_layers += [nn.Conv2d(v.out_channels, cfg[k] * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(v.out_channels, cfg[k] * num_classes, kernel_size=3, padding=1)]
 
