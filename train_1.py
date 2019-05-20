@@ -193,7 +193,7 @@ def train():
             loc_loss += loss_l.item()
             conf_loss += loss_c.item()
             train_loss += loss_l.item() + loss_c.item()
-            print('[train_loss] ' + str(batch_i) + " " + str(train_loss))
+            # print('[train_loss] ' + str(batch_i) + " " + str(train_loss))
 
         time_end = time.time()
         loc_loss /= len(data_loader)
@@ -232,7 +232,7 @@ def test(model, criterion, test_data_loader):
             loc_loss += loss_l.item()
             conf_loss += loss_c.item()
             test_loss += loss_l.item() + loss_c.item()
-            print('[test_loss] ' + str(batch_i) + " " + str(test_loss))
+            # print('[test_loss] ' + str(batch_i) + " " + str(test_loss))
 
         time_end = time.time()
         time_avg = float(time_end - time_start) / float(len(test_data_loader.dataset))
