@@ -23,8 +23,8 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detector Training With Pytorch')
 train_set = parser.add_mutually_exclusive_group()
-parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO', 'things'], type=str, help='VOC or COCO or things')
-parser.add_argument('--dataset_root', default=VOC_ROOT, help='Dataset root directory path')
+parser.add_argument('--dataset', default='things', choices=['VOC', 'COCO', 'things'], type=str, help='VOC or COCO or things')
+parser.add_argument('--dataset_root', default='/home/lijc08/deeplearning/Data/AI比赛/特定物品识别/images_train/', help='Dataset root directory path')
 parser.add_argument('--basenet', default='vgg16_reducedfc.pth', help='Pretrained base model')
 parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str, help='Checkpoint state_dict file to resume training from')
@@ -193,6 +193,7 @@ def train():
             loc_loss += loss_l.item()
             conf_loss += loss_c.item()
             train_loss += loss_l.item() + loss_c.item()
+            print('[train_loss] ' + str(batch_i) + " " + str(train_loss))
 
         time_end = time.time()
         loc_loss /= len(data_loader)
@@ -231,6 +232,7 @@ def test(model, criterion, test_data_loader):
             loc_loss += loss_l.item()
             conf_loss += loss_c.item()
             test_loss += loss_l.item() + loss_c.item()
+            print('[test_loss] ' + str(batch_i) + " " + str(test_loss))
 
         time_end = time.time()
         time_avg = float(time_end - time_start) / float(len(test_data_loader.dataset))
