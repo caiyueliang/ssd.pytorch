@@ -169,8 +169,10 @@ def train():
         train_loss = 0.0
         loc_max = 0.0
         loc_min = 0.0
+        loc_mean = 0.0
         conf_max = 0.0
         conf_min = 0.0
+        conf_mean = 0.0
 
         if epoch >= args.decay_epoch and epoch % args.decay_epoch == 0:
             args.lr *= 0.1
@@ -191,8 +193,10 @@ def train():
 
             # print(out[0].size(), out[1].size())
             for i in range(out[0].size()[0]):
+                loc_mean += torch.mean(out[0][i]).item()
                 loc_min += torch.min(out[0][i]).item()
                 loc_max += torch.max(out[0][i]).item()
+                conf_mean += torch.mean(out[1][i]).item()
                 conf_min += torch.min(out[1][i]).item()
                 conf_max += torch.max(out[1][i]).item()
 
@@ -214,11 +218,14 @@ def train():
         print('[epoch] %d train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f, lr: %lf, time: %lf' %
               (epoch, train_loss, conf_loss, loc_loss, args.lr, time_end - time_start))
 
+        loc_mean /= len(dataset)
         loc_min /= len(dataset)
         loc_max /= len(dataset)
+        conf_mean /= len(dataset)
         conf_min /= len(dataset)
         conf_max /= len(dataset)
-        print("loc", loc_min, loc_max, "conf", conf_min, conf_max)
+        print("loc_mean", loc_mean, "loc_min", loc_min, "loc_max", loc_max,
+              "conf_mean", conf_mean, "conf_min", conf_min, "conf_max", conf_max)
 
         loc_min /= len(dataset)
         test_loss = test(net, criterion, test_data_loader, len(test_dataset))
@@ -233,10 +240,13 @@ def test(model, criterion, test_data_loader, data_len):
         loc_loss = 0.0
         conf_loss = 0.0
         test_loss = 0.0
+
         loc_max = 0.0
         loc_min = 0.0
+        loc_mean = 0.0
         conf_max = 0.0
         conf_min = 0.0
+        conf_mean = 0.0
 
         time_start = time.time()
         # 测试集
@@ -258,8 +268,10 @@ def test(model, criterion, test_data_loader, data_len):
             # print('[test_loss] ' + str(batch_i) + " " + str(test_loss))
 
             for i in range(out[0].size()[0]):
+                loc_mean += torch.mean(out[0][i]).item()
                 loc_min += torch.min(out[0][i]).item()
                 loc_max += torch.max(out[0][i]).item()
+                conf_mean += torch.mean(out[1][i]).item()
                 conf_min += torch.min(out[1][i]).item()
                 conf_max += torch.max(out[1][i]).item()
 
@@ -272,11 +284,14 @@ def test(model, criterion, test_data_loader, data_len):
         print('train Loss: %.4f, conf_loss: %.4f, loc_loss: %.4f, time_avg: %lf\n' %
               (test_loss, conf_loss, loc_loss, time_avg))
 
+        loc_mean /= data_len
         loc_min /= data_len
         loc_max /= data_len
+        conf_mean /= data_len
         conf_min /= data_len
         conf_max /= data_len
-        print(data_len, "loc", loc_min, loc_max, "conf", conf_min, conf_max)
+        print("loc_mean", loc_mean, "loc_min", loc_min, "loc_max", loc_max,
+              "conf_mean", conf_mean, "conf_min", conf_min, "conf_max", conf_max)
 
         return test_loss
 
