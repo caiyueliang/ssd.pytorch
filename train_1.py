@@ -16,6 +16,10 @@ import numpy as np
 import argparse
 from data.datasets import SSDDataset
 
+from tensorboardX import SummaryWriter
+
+writer = SummaryWriter()
+
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -228,14 +232,18 @@ def train():
               "conf_mean", conf_mean, "conf_min", conf_min, "conf_max", conf_max)
 
         loc_min /= len(dataset)
-        test_loss = test(net, criterion, test_data_loader, len(test_dataset))
+        test_loss = test(net, criterion, test_data_loader, len(test_dataset), epoch)
         if test_loss < min_loss:
             min_loss = test_loss
             print('save best model')
             torch.save(ssd_net.state_dict(), os.path.join(args.save_folder, args.checkpoint_name))
 
+        writer.add_scalars('train/loc', {'mean': loc_mean, 'min': loc_min, 'max': loc_max}, epoch)
+        writer.add_scalars('train/conf', {'mean': conf_mean, 'min': conf_min, 'max': conf_max}, epoch)
+        writer.add_scalars('loss', {'train_loss': train_loss, 'test_loss': test_loss}, epoch)
 
-def test(model, criterion, test_data_loader, data_len):
+
+def test(model, criterion, test_data_loader, data_len, epoch):
         model.eval()
         loc_loss = 0.0
         conf_loss = 0.0
@@ -292,6 +300,9 @@ def test(model, criterion, test_data_loader, data_len):
         conf_max /= data_len
         print("loc_mean", loc_mean, "loc_min", loc_min, "loc_max", loc_max,
               "conf_mean", conf_mean, "conf_min", conf_min, "conf_max", conf_max)
+
+        writer.add_scalars('test/loc', {'mean': loc_mean, 'min': loc_min, 'max': loc_max}, epoch)
+        writer.add_scalars('test/conf', {'mean': conf_mean, 'min': conf_min, 'max': conf_max}, epoch)
 
         return test_loss
 
