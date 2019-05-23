@@ -231,7 +231,6 @@ def train():
         print("loc_mean", loc_mean, "loc_min", loc_min, "loc_max", loc_max,
               "conf_mean", conf_mean, "conf_min", conf_min, "conf_max", conf_max)
 
-        loc_min /= len(dataset)
         test_loss = test(net, criterion, test_data_loader, len(test_dataset), epoch)
         if test_loss < min_loss:
             min_loss = test_loss
@@ -241,6 +240,8 @@ def train():
         writer.add_scalars('train/loc', {'mean': loc_mean, 'min': loc_min, 'max': loc_max}, epoch)
         writer.add_scalars('train/conf', {'mean': conf_mean, 'min': conf_min, 'max': conf_max}, epoch)
         writer.add_scalars('loss', {'train_loss': train_loss, 'test_loss': test_loss}, epoch)
+
+    writer.close()
 
 
 def test(model, criterion, test_data_loader, data_len, epoch):
