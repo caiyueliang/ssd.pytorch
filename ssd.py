@@ -98,6 +98,9 @@ class SSD(nn.Module):
 
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
+        # print("loc", torch.min(loc), torch.max(loc))
+        # print("conf", torch.min(conf), torch.max(conf))
+
         if self.phase == "test":
             output = self.detect(
                 loc.view(loc.size(0), -1, 4),                                   # loc preds
@@ -285,4 +288,5 @@ def build_ssd(phase, size, num_classes, cfg, top_k=50, conf_thresh=0.7, nms_thre
                                      extra_layers=add_extras(cfg=extras[str(size)], channels=1024),
                                      cfg=mbox[str(size)],
                                      num_classes=num_classes)
+    # print('head_', head_)
     return SSD(phase, size, base_, extras_, head_, num_classes, cfg, top_k, conf_thresh, nms_thresh)
